@@ -25,7 +25,7 @@
 
 ## Scheduling remains disabled
 
-No GitHub schedule event or cron-job.org job is created for this site. After explicit owner approval, a repository-scoped minimum-permission API token can POST `{"ref":"main"}` to the documented workflow dispatch endpoint. Existing GuideHollow 09:30 KST scheduling must not be edited. Manual workflow's default is read-only check-connection; use its explicit publish input for a controlled trial after all gates are ready.
+No GitHub schedule event or cron-job.org job is created for this site. After explicit owner approval, a repository-scoped minimum-permission API token can POST `{"ref":"main"}` to the documented workflow dispatch endpoint. Existing GuideHollow 09:30 KST scheduling must not be edited. The workflow defaults to publish for the documented future dispatch body; explicitly choose check-connection for setup, and keep the registry preparing until all gates are ready.
 
 ## Reference architecture review
 

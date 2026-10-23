@@ -26,7 +26,7 @@ def text(value, title=False):
 def registry():
     properties = {key: text(value, key == 'Site ID') for key, value in {
         'Site ID': p.SITE_ID, 'Site Name': 'GuideHollow Sheets', 'Repository': p.REPO,
-        'Language': 'en', 'Timezone': 'Asia/Seoul', 'Content Format': 'astro-markdown',
+        'Language': 'en-US', 'Timezone': 'Asia/Seoul', 'Content Format': 'astro-markdown',
         'Workflow': 'notion-daily-publisher.yml'}.items()}
     properties.update({'Base URL': {'url': p.SITE}, 'Daily Limit': {'number': 1}, 'Status': {'select': {'name': 'active'}}})
     return {'id': p.SITE_PAGE, 'properties': properties}
@@ -478,6 +478,7 @@ class PublisherTests(unittest.TestCase):
     def test_workflow_manual_only_protection_and_permissions(self):
         workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/notion-daily-publisher.yml').read_text()
         self.assertIn('workflow_dispatch:', workflow)
+        self.assertIn('default: publish', workflow)
         self.assertNotIn('schedule:', workflow)
         self.assertNotIn('pull-requests: write', workflow)
         self.assertNotIn('--force', workflow)

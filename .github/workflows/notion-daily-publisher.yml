@@ -6,7 +6,7 @@ on:
       mode:
         description: Read-only connection check or publish one approved due article
         required: true
-        default: check-connection
+        default: publish
         type: choice
         options:
           - check-connection
