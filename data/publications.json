@@ -7,12 +7,15 @@
       "slug": "iferror-vs-ifna-excel-google-sheets",
       "title": "IFERROR vs IFNA in Excel and Google Sheets: Fix Errors Without Hiding Problems",
       "kst_date": "2026-10-24",
-      "state": "staged",
+      "state": "published",
       "url": "https://sheets.guidehollow.com/formulas/iferror-vs-ifna-excel-google-sheets/",
       "file": "src/content/articles/iferror-vs-ifna-excel-google-sheets.md",
       "sha256": "4944901c376d9b8754e0b3b7c7696b668486ba073daacec91f733459506a4a94",
       "body_excerpt": "Use IFNA when a missing lookup match is an expected outcome. Use IFERROR only when you have decided that every error fro",
-      "source_revision": "a20bf1df8113ff9a8815f37ea61053dda0ac058adc96e7cde7c96583d4ea9ff7"
+      "source_revision": "a20bf1df8113ff9a8815f37ea61053dda0ac058adc96e7cde7c96583d4ea9ff7",
+      "published_at": "2026-10-23T23:16:28.112026+00:00",
+      "deployment_run_id": 40038630353,
+      "commit": "54c5530a1cc66776619efe6b5e146da58de56ce1"
     }
   ]
 }
