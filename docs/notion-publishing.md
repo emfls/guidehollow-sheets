@@ -15,7 +15,7 @@ The initial registry status is **preparing**. Publishing must remain disabled un
 | Registry page | `402db4c0-a991-813e-9641-dcac9b1e46f5` |
 | Shared queue data source | `b788e982-fc20-4df0-9f1b-8ff2a19f271d` |
 | Shared quality log | `1e28a0aa-72ec-4e24-850b-c97fe2eb8ce0` |
-| Registry language / timezone | `en` / `Asia/Seoul` |
+| Registry language / timezone | `en-US` / `Asia/Seoul` |
 | Limit / content format / workflow | `1` / `astro-markdown` / `notion-daily-publisher.yml` |
 
 Every registry field above and `Status=active` must match, including the registry page identity. There must be exactly one registry result for `gh-sheets`. The queue article must have exactly one `배포 사이트` relation pointing to that registry page. A different site's queue rows are ignored; an article routed to Sheets and another site, a repeated relation, or a truncated relation fails closed.
@@ -45,7 +45,7 @@ The check reads the integration identity, queue source, and matching registry re
 
 ## Manual publication and durable recovery
 
-Run **Notion daily GuideHollow Sheets publisher** from Actions on `main`. Its default mode is `check-connection`; choose `publish` deliberately for a release attempt.
+Run **Notion daily GuideHollow Sheets publisher** from Actions on `main`. Its default mode is `publish`, matching the future scheduler body `{"ref":"main"}`. Explicitly select `check-connection` for a read-only setup check. A dispatch cannot stage anything while this registry is preparing.
 
 The publication path is:
 
@@ -74,3 +74,8 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_notion_
 These are isolated tests with fake Notion/GitHub/HTTP results. They cover site routing, registry gates, approval/scheduling, missing secrets, ledger corruption/duplicates/daily accounting, resume source integrity, initial slug protection, Markdown boundaries/links, literal formula/code-span preservation, unsupported blocks, changed source revisions and completed-queue reconciliation, failed/wrong-SHA deployments, live canonical/page/body verification, shared quality relations, and workflow permission/trigger safeguards.
 
 They do not establish real integration access, Actions push/dispatch permissions, Pages/DNS readiness, live deployed content, human factual approval, revenue, SEO/indexing, or native spreadsheet execution. None of those missing observations should be recorded as zero or a successful publication. Scheduling remains external and future-only; no scheduler is activated by these files.
+
+
+## Future external scheduling (not activated)
+
+Only after separate owner approval, POST to `https://api.github.com/repos/emfls/guidehollow-sheets/actions/workflows/notion-daily-publisher.yml/dispatches` with body `{"ref":"main"}`, `Content-Type: application/json`, `Accept: application/vnd.github+json`, and a repository-scoped minimum-permission authentication token supplied privately to the scheduler. Default `publish` mode still requires every registry/approval/due-date/daily-limit gate. Do not store the token in Git, Notion or logs. No cron-job.org job was created or enabled; preserve the existing main-site 09:30 job.

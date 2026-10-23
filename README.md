@@ -59,6 +59,6 @@ While DNS/HTTPS is unverified, registry status stays `preparing` and `site.launc
 
 No runtime environment variables are required for the static site. `NOTION_API_TOKEN` belongs **only** in this repository's GitHub Actions Secret, never a source file, Notion document or local committed environment file. `GH_TOKEN` inside the publisher is supplied from the run's `github.token`. Do not copy a secret from another repository.
 
-The publisher defaults to `check-connection`; the registry must match `gh-sheets` and be `active` before staging. Missing credentials stop safely. The initial six queue records remain unapproved drafts; their local slugs and Notion page IDs prevent duplicate daily publication. See [Notion publishing](docs/notion-publishing.md), [content standards](docs/content-standards.md), and [bootstrap mappings](docs/notion-bootstrap-map.json).
+The publisher defaults to `publish` so the documented future `{"ref":"main"}` dispatch works; explicitly choose `check-connection` for a read-only setup check. The registry must match `gh-sheets` and be `active` before staging. Missing credentials stop safely. The initial six queue records remain unapproved drafts; their local slugs and Notion page IDs prevent duplicate daily publication. See [Notion publishing](docs/notion-publishing.md), [content standards](docs/content-standards.md), and [bootstrap mappings](docs/notion-bootstrap-map.json).
 
 Existing GuideHollow code, publishing schedule, EMFLS repositories and cron jobs are outside this repository's write scope.

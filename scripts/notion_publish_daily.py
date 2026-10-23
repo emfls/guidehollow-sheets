@@ -89,7 +89,7 @@ def verify_site_registry():
     row = rows[0]
     p = row['properties']
     expected = {'Site ID': SITE_ID, 'Site Name': 'GuideHollow Sheets', 'Repository': REPO,
-                'Language': 'en', 'Timezone': 'Asia/Seoul', 'Content Format': 'astro-markdown',
+                'Language': 'en-US', 'Timezone': 'Asia/Seoul', 'Content Format': 'astro-markdown',
                 'Workflow': 'notion-daily-publisher.yml'}
     if any(prop(p, key) != value for key, value in expected.items()) or (
             p['Base URL'].get('url') != SITE or p['Daily Limit'].get('number') != 1 or

@@ -57,3 +57,8 @@ GitHub PR·CI·배포 결과는 실행 후 아래에 추가합니다.
 - 기존 GuideHollow checkout은 clean, HEAD `1e95d6b3816b0c8c0545b608c283c7f883421d68` 유지. 기존 저장소·배포·예약 변경 없음.
 
 남은 승인/순위/수익 실적을 만들지 않았으며, DNS와 Notion 시크릿 없이 자동 발행을 활성화하지 않았습니다.
+
+
+## 최종 설정 대조 보완
+
+실제 Site Registry의 Language=en-US에 맞춰 발행기 검증 상수와 fixture를 일치시켰습니다. 준비 상태에서 의도치 않게 영구 불일치로 차단될 수 있는 설정 오류를 제거했습니다. 향후 지정된 `{"ref":"main"}` 호출을 지원하도록 workflow 기본 모드는 publish이며, 설정 확인은 명시적 check-connection 모드로 실행합니다. preparing·승인·예정일·일일 제한 검증과 예약 비활성은 유지됩니다. 외부 예약은 여전히 생성하지 않았습니다.
