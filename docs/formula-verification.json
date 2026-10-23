@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "checkedDate": "2026-10-24",
+  "method": "Node.js assert-based mathematical and raw-string oracles; not an Excel/Sheets formula evaluator",
+  "nativeEngines": {
+    "excel": "not executed",
+    "googleSheets": "not executed"
+  },
+  "sources": [
+    {
+      "title": "Microsoft: XLOOKUP function",
+      "url": "https://support.microsoft.com/en-gb/excel/functions/xlookup-function",
+      "retrievedDate": "2026-10-24",
+      "status": "direct page opened and relevant documentation read"
+    },
+    {
+      "title": "Google: FILTER function",
+      "url": "https://support.google.com/docs/answer/3093197?hl=en",
+      "retrievedDate": "2026-10-24",
+      "status": "direct page opened and relevant documentation read"
+    },
+    {
+      "title": "Microsoft: Keeping leading zeros and large numbers",
+      "url": "https://support.microsoft.com/en-us/excel/keeping-leading-zeros-and-large-numbers",
+      "retrievedDate": "2026-10-24",
+      "status": "direct page opened and relevant documentation read"
+    },
+    {
+      "title": "Microsoft: Import or export text files",
+      "url": "https://support.microsoft.com/en-us/excel/get-started/import-or-export-text-txt-or-csv-files",
+      "retrievedDate": "2026-10-24",
+      "status": "direct page opened and relevant documentation read"
+    },
+    {
+      "title": "Microsoft: Filter for unique values or remove duplicate values",
+      "url": "https://support.microsoft.com/en-us/excel/get-started/filter-for-unique-values-or-remove-duplicate-values",
+      "retrievedDate": "2026-10-24",
+      "status": "direct page opened and relevant documentation read"
+    },
+    {
+      "title": "Google: Split text, remove duplicates, or trim whitespace",
+      "url": "https://support.google.com/docs/answer/6325535?hl=en",
+      "retrievedDate": "2026-10-24",
+      "status": "direct page opened and relevant documentation read"
+    },
+    {
+      "title": "Microsoft: SUMIFS function",
+      "url": "https://support.microsoft.com/en-au/excel/functions/sumifs-function",
+      "retrievedDate": "2026-10-24",
+      "status": "direct page opened and relevant documentation read"
+    },
+    {
+      "title": "Google: SUMIFS function",
+      "url": "https://support.google.com/docs/answer/3238496?hl=en-GB",
+      "retrievedDate": "2026-10-24",
+      "status": "direct page opened and relevant documentation read"
+    },
+    {
+      "title": "Microsoft: FILTER function",
+      "url": "https://support.microsoft.com/en-us/excel/functions/filter-function",
+      "retrievedDate": "2026-10-24",
+      "status": "direct page opened and relevant documentation read"
+    },
+    {
+      "title": "Google: ARRAYFORMULA",
+      "url": "https://support.google.com/docs/answer/3093275?hl=en",
+      "retrievedDate": "2026-10-24",
+      "status": "direct page opened and relevant documentation read"
+    },
+    {
+      "title": "Google: XLOOKUP function",
+      "url": "https://support.google.com/docs/answer/12405947?hl=en",
+      "retrievedDate": "2026-10-24",
+      "status": "direct page opened and relevant documentation read"
+    },
+    {
+      "title": "Google: DATEVALUE",
+      "url": "https://support.google.com/docs/answer/3093039?hl=en",
+      "retrievedDate": "2026-10-24",
+      "status": "direct page opened and relevant documentation read"
+    },
+    {
+      "title": "Microsoft: How to correct a #N/A error",
+      "url": "https://support.microsoft.com/en-us/excel/how-to-correct-a-n-a-error",
+      "retrievedDate": "2026-10-24",
+      "status": "direct page opened and relevant documentation read"
+    }
+  ],
+  "articles": {
+    "xlookup-not-working": {
+      "route": "/troubleshooting/xlookup-not-working/",
+      "checks": [
+        "first exact 24",
+        "last exact 26",
+        "missing key label"
+      ],
+      "oracleStatus": "passed; included in 7-test Node.js run on 2026-10-24",
+      "nativeEngineStatus": "unverified",
+      "publicationStatus": "pending"
+    },
+    "google-sheets-filter-examples": {
+      "route": "/formulas/google-sheets-filter-examples/",
+      "checks": [
+        "East IDs O-101 O-103",
+        "AND IDs O-102 O-104",
+        "OR East/North IDs O-101 O-103 O-104",
+        "OR overlap unique",
+        "empty South set"
+      ],
+      "oracleStatus": "passed; included in 7-test Node.js run on 2026-10-24",
+      "nativeEngineStatus": "unverified",
+      "publicationStatus": "pending"
+    },
+    "import-csv-preserve-zeros-dates": {
+      "route": "/data-cleaning/import-csv-preserve-zeros-dates/",
+      "checks": [
+        "00123 text length 5",
+        "long ID exact length 18",
+        "001E5 preserved",
+        "ambiguous dates remain raw",
+        "ISO component extraction 2026-10-24"
+      ],
+      "oracleStatus": "passed; included in 7-test Node.js run on 2026-10-24",
+      "nativeEngineStatus": "unverified",
+      "publicationStatus": "pending"
+    },
+    "remove-duplicate-rows": {
+      "route": "/data-cleaning/remove-duplicate-rows/",
+      "checks": [
+        "all columns survivors 2 4 5 6 7",
+        "ID survivors 2 4 6",
+        "totals 139 119 67",
+        "case-only pair differs"
+      ],
+      "oracleStatus": "passed; included in 7-test Node.js run on 2026-10-24",
+      "nativeEngineStatus": "unverified",
+      "publicationStatus": "pending"
+    },
+    "sumifs-with-dates": {
+      "route": "/formulas/sumifs-with-dates/",
+      "checks": [
+        "October 85",
+        "Web October 60",
+        "bad inclusive end 55",
+        "October31 50",
+        "November1 excluded"
+      ],
+      "oracleStatus": "passed; included in 7-test Node.js run on 2026-10-24",
+      "nativeEngineStatus": "unverified",
+      "publicationStatus": "pending"
+    },
+    "excel-vs-google-sheets-formulas": {
+      "route": "/comparisons/excel-vs-google-sheets-formulas/",
+      "checks": [
+        "Clip East 9",
+        "South empty",
+        "array 6 14 18 10",
+        "Clip lookup 9",
+        "Tape missing"
+      ],
+      "oracleStatus": "passed; included in 7-test Node.js run on 2026-10-24",
+      "nativeEngineStatus": "unverified",
+      "publicationStatus": "pending"
+    }
+  },
+  "testRun": {
+    "command": "node --test tests/content-examples.test.mjs",
+    "date": "2026-10-24",
+    "tests": 7,
+    "passed": 7,
+    "failed": 0,
+    "scope": "six fixture oracles plus article evidence/download structure; no native spreadsheet engine execution"
+  }
+}

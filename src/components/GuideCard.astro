@@ -1,0 +1,7 @@
+---
+import {articleUrl,readingMinutes,type Article} from '../lib/content';
+import {categories} from '../config';
+interface Props{post:Article;number?:number}
+const {post,number}=Astro.props;const c=categories.find(c=>c.slug===post.data.category)!;
+---
+<article class="guide-card"><a class="card-link" href={articleUrl(post)}><div class="card-top"><span class={`category-label ${c.color}`}>{c.name}</span><span class="mono">{number?String(number).padStart(2,'0'):'↗'}</span></div><h3>{post.data.title}</h3><p>{post.data.description}</p><div class="card-bottom"><span>{readingMinutes(post.body)} min read</span><span class="card-arrow" aria-hidden="true">↗</span></div></a></article>

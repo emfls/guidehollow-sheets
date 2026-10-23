@@ -1,0 +1,4 @@
+---
+import Base from '../../layouts/Base.astro';import GuideCard from '../../components/GuideCard.astro';import {publishedArticles} from '../../lib/content';const posts=await publishedArticles();
+---
+<Base title="All Excel & Google Sheets Guides" description="Browse practical spreadsheet guides with original examples, expected results, official sources, and clear steps for Excel and Google Sheets." breadcrumbs={[{name:'All guides',url:'/guides/'}]}><header class="page-heading"><p class="eyebrow">The working library</p><h1>A clearer way<br/>through your spreadsheet.</h1><p>Start with a specific problem. Leave with a method you can check.</p></header><div class="guide-grid section">{posts.map((post,i)=><GuideCard post={post} number={i+1}/>)}</div></Base>

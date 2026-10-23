@@ -1,0 +1,6 @@
+Order,Region,Status,Units
+O-101,East,Open,4
+O-102,West,Open,8
+O-103,East,Closed,12
+O-104,North,Open,10
+O-105,West,Closed,3
