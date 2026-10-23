@@ -45,3 +45,15 @@
 - 검색엔진 등록 및 실제 성과, 광고 적용은 별도 운영 단계이며 승인·순위 보장 없음.
 
 GitHub PR·CI·배포 결과는 실행 후 아래에 추가합니다.
+
+## GitHub 실제 실행 결과
+
+- [PR #1](https://github.com/emfls/guidehollow-sheets/pull/1): CI 통과 후 main 병합. 구현 커밋 `f3532d3c2944a86272e5fd08a617f383e1663045`.
+- [PR CI #40033954530](https://github.com/emfls/guidehollow-sheets/actions/runs/40033954530): success. 의존성 설치·JS 22·Python 38·타입 검사·빌드 통과.
+- [main Pages #40034089367](https://github.com/emfls/guidehollow-sheets/actions/runs/40034089367): build와 deploy 모두 success. GitHub Pages 아티팩트 배포 완료이며 DNS/HTTPS 공개 검증과는 별개.
+- [읽기 전용 Notion 연결 검사 #40034106268](https://github.com/emfls/guidehollow-sheets/actions/runs/40034106268): failure. `NOTION_API_TOKEN` 미설정으로 `SETUP_REQUIRED` 중단. 실제 원고 선택·커밋·배포·Notion 완료 쓰기 단계는 실행하지 않음. 이는 연결 성공을 의미하지 않음.
+- 배포 후 `dig` CNAME/A 빈 응답, 실제 HTTPS 요청은 `curl (6) Could not resolve host`. Pages `https_enforced=false`. 따라서 새 도메인 공개·인증서·실제 404 성공을 주장하지 않음.
+- 추가 브라우저 확인: 23개 전체 경로 390px에서 scrollWidth=390, H1 하나, 외부 자산 요청 0. CSV 실제 파일의 UTF-8 오류·BOM/인용된 줄바꿈·2→1 중복 제거·초기화, 함수 목적 필터, 검색 HTML 입력의 안전한 텍스트 출력 통과.
+- 기존 GuideHollow checkout은 clean, HEAD `1e95d6b3816b0c8c0545b608c283c7f883421d68` 유지. 기존 저장소·배포·예약 변경 없음.
+
+남은 승인/순위/수익 실적을 만들지 않았으며, DNS와 Notion 시크릿 없이 자동 발행을 활성화하지 않았습니다.

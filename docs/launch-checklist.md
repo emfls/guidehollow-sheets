@@ -30,3 +30,11 @@ No GitHub schedule event or cron-job.org job is created for this site. After exp
 ## Reference architecture review
 
 The main GuideHollow's typed Markdown, static search, output validation and official Pages-action patterns informed the new implementation. Its dark AI layout, content, advertising account, queue ownership constants and scheduling were not copied. Latest reference publisher files were read into a temporary directory without updating the existing checkout. This repository adds strict multi-site routing, bootstrap identity mapping, source revision validation and explicitly documented failed-finalization recovery limits.
+
+## Initial GitHub release evidence (2026-10-24 KST)
+
+- [x] PR #1 merged after passing CI: https://github.com/emfls/guidehollow-sheets/pull/1
+- [x] Main Pages build and deploy succeeded: https://github.com/emfls/guidehollow-sheets/actions/runs/40034089367
+- [x] Actual manual read-only connection check safely stopped for missing NOTION_API_TOKEN: https://github.com/emfls/guidehollow-sheets/actions/runs/40034106268 (failure, not a successful connection).
+- [x] All 23 local routes inspected at 390px without page overflow; tools/search/menu interactions checked.
+- [ ] Public custom-domain release remains unverified: DNS has no answer; HTTPS request fails name resolution. Keep preparing and do not label bootstrap queue items published.
