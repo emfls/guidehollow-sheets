@@ -1,0 +1,144 @@
+name: Notion daily GuideHollow Sheets publisher
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Read-only connection check or publish one approved due article
+        required: true
+        default: check-connection
+        type: choice
+        options:
+          - check-connection
+          - publish
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: guidehollow-sheets-notion-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'emfls/guidehollow-sheets' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      TZ: Asia/Seoul
+      NOTION_API_TOKEN: ${{ secrets.NOTION_API_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Publisher regression tests (offline)
+        run: python -m unittest discover -s tests -p 'test_notion_publisher.py' -v
+
+      - name: Read-only integration connection check
+        if: inputs.mode == 'check-connection'
+        run: python scripts/notion_publish_daily.py --check-connection
+
+      - name: Check write policy without bypassing protection
+        if: inputs.mode == 'publish'
+        shell: bash
+        run: |
+          set -euo pipefail
+          protected="$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.protected')"
+          if [ "$protected" != false ]; then
+            echo '::error::Main is protected (or policy could not be verified). This publisher cannot bypass protection. Use the normal reviewed PR process; leave the queue pending.'
+            exit 1
+          fi
+
+      - name: Validate route, approval, due time, accounting and stage or resume one source
+        if: inputs.mode == 'publish'
+        id: stage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/notion_publish_daily.py stage > /tmp/notion-result.json
+          cat /tmp/notion-result.json
+          python - <<'PY'
+          import json, os
+          with open('/tmp/notion-result.json') as source:
+              result = json.load(source)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              for field in ('status', 'file', 'url', 'page_id'):
+                  value = result.get(field, '')
+                  if '\n' in value or '\r' in value:
+                      raise ValueError('Invalid workflow output')
+                  output.write(f'{field}={value}\n')
+          PY
+
+      - name: Validate entire staged site
+        if: steps.stage.outputs.status == 'STAGED' || steps.stage.outputs.status == 'RESUME'
+        run: |
+          npm ci
+          npm test
+          npm run check
+          npm run build
+
+      - name: Persist staged source and ledger using nonforce main push
+        if: steps.stage.outputs.status == 'STAGED' || steps.stage.outputs.status == 'RESUME'
+        id: source
+        env:
+          ARTICLE_FILE: ${{ steps.stage.outputs.file }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          base="$(git rev-parse HEAD)"
+          git add -- "$ARTICLE_FILE" data/publications.json
+          git diff --cached --check
+          if ! git diff --cached --quiet; then
+            git commit -m 'content: stage one approved GuideHollow Sheets article'
+          fi
+          git fetch origin main
+          if [ "$base" != "$(git rev-parse origin/main)" ]; then
+            echo '::error::Main advanced during validation; retry from latest main. No push was attempted.'
+            exit 1
+          fi
+          git push origin HEAD:refs/heads/main
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Explicit Pages dispatch, exact SHA deployment proof, live body check, then finalize
+        if: steps.stage.outputs.status == 'STAGED' || steps.stage.outputs.status == 'RESUME'
+        env:
+          NOTION_PAGE_ID: ${{ steps.stage.outputs.page_id }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        run: python scripts/notion_publish_daily.py deploy-finalize --page-id "$NOTION_PAGE_ID" --sha "$SOURCE_SHA"
+
+      - name: Persist successful publication accounting
+        if: steps.stage.outputs.status == 'STAGED' || steps.stage.outputs.status == 'RESUME'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="$(git rev-parse HEAD)"
+          git add -- data/publications.json
+          git diff --cached --check
+          git commit -m 'content: record verified Sheets Pages publication'
+          git fetch origin main
+          if [ "$base" != "$(git rev-parse origin/main)" ]; then
+            echo '::error::Main advanced after publication. Notion is finalized, source ledger remains staged on main. Manual reconciliation of original publication evidence is required; preserve the original timestamp/commit and do not remove the staged row.'
+            exit 1
+          fi
+          git push origin HEAD:refs/heads/main
+
+      - name: Preserve nonsecret stage result
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sheets-notion-publish-${{ github.run_id }}
+          path: /tmp/notion-result.json
+          if-no-files-found: ignore

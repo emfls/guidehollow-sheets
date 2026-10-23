@@ -1,0 +1,41 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base title="CSV Duplicate Checker" description="Find duplicate CSV rows locally in your browser, choose matching columns, and download a cleaned CSV." breadcrumbs={[{name:'Tools',url:'/tools/'},{name:'CSV Duplicate Checker',url:'/tools/csv-duplicate-checker/'}]}>
+  <div>
+    <header class="page-heading"><p class="eyebrow">Free browser tool</p><h1>CSV Duplicate Checker</h1><p>Keep the first occurrence. Preview every decision before you download.</p></header>
+    <div class="notice"><strong>Your CSV stays in this browser.</strong> This tool makes no upload or network request. It does not save your file. Refresh to clear the session.</div>
+    <section class="panel" aria-labelledby="csv-heading">
+      <h2 id="csv-heading">1. Add your CSV</h2>
+      <p>Comma-separated UTF-8 only. Maximum 2 MiB, 20,000 data rows and 200 columns. Quoted commas, line breaks, escaped quotes and a UTF-8 BOM are supported. Convert other encodings to UTF-8 first.</p>
+      <div class="field"><label for="csv-file">Choose a CSV file</label><input id="csv-file" type="file" accept=".csv,text/csv" /></div>
+      <div class="field"><label for="csv-input">Or paste CSV text</label><textarea id="csv-input" rows="8" spellcheck="false" placeholder={'id,name\n001,Ada\n001,Ada\n002,Lin'}></textarea></div>
+      <p><label><input id="csv-header" type="checkbox" checked /> First record is a header (excluded from matching)</label></p>
+      <button id="csv-load" class="button" type="button">Read CSV</button> <button id="csv-sample" class="button secondary" type="button">Try sample</button> <button id="csv-reset" class="button secondary" type="button">Reset</button>
+      <p id="csv-error" role="alert" hidden></p>
+    </section>
+    <section id="csv-options" class="panel" hidden aria-labelledby="match-heading">
+      <h2 id="match-heading">2. Choose how rows match</h2>
+      <p>Comparison is exact and case-sensitive: spaces, leading zeros and text such as <code>001</code> are preserved. No trimming or number conversion. Rows with empty keys can match each other.</p>
+      <div class="field"><label for="csv-mode">Match using</label><select id="csv-mode"><option value="all">All columns</option><option value="selected">Selected columns</option></select></div>
+      <fieldset id="csv-columns" hidden><legend>Key columns (choose at least one)</legend></fieldset>
+      <button id="csv-check" class="button" type="button">Find duplicates</button>
+    </section>
+    <p id="csv-status" class="status" aria-live="polite"></p>
+    <section id="csv-results" class="panel" hidden aria-labelledby="results-heading">
+      <h2 id="results-heading">3. Review and download</h2><p id="csv-counts"></p>
+      <h3>Input preview</h3><div id="csv-before" class="table-scroll"></div>
+      <h3>Rows to remove</h3><p>Record numbers count CSV records, including a header when present; quoted line breaks do not add records.</p><div id="csv-duplicates" class="table-scroll"></div>
+      <h3>Cleaned preview</h3><div id="csv-after" class="table-scroll"></div>
+      <p>Each preview shows up to 10 rows. The download includes all kept rows in their original order.</p>
+      <div class="notice"><strong>Spreadsheet safety:</strong> cells starting with =, +, -, @ or certain whitespace can be interpreted as formulas when opened in spreadsheet apps. Quoting CSV fields does not prevent this. Source values are never modified here. Import untrusted files as text, and review formulas before opening.</div>
+      <p id="csv-risk"></p><p><label><input id="csv-ack" type="checkbox" /> I understand the spreadsheet formula risk and want the unchanged values.</label></p>
+      <button id="csv-download" class="button" type="button" disabled>Download cleaned CSV</button>
+      <p>Export is UTF-8 with CRLF record separators. Spreadsheet apps may reinterpret dates or remove leading zeros; use their import dialog and choose Text for identifier columns.</p>
+    </section>
+    <section class="prose"><h2>What counts as a duplicate?</h2><p>With all columns selected, every cell must match. With selected columns, only those keys determine a match; other values on removed rows may differ. The first matching row is always kept. Review the removal preview before exporting and keep a copy of your original file.</p><h2>Limits</h2><p>This tool handles comma-separated text files, not XLSX workbooks or semicolon/tab-delimited files. A one-column file is valid CSV. Blank records are retained and must have the same width as other records. Headers do not need to be unique because columns are identified by position.</p></section>
+    <aside class="panel"><h2>Keep learning</h2><p><a class="button secondary" href="/data-cleaning/remove-duplicate-rows/">Read the guide to removing duplicate rows</a></p></aside>
+    <noscript><p class="notice">Enable JavaScript to use this local CSV tool.</p></noscript>
+  </div>
+</Base>
+<script>import '../../scripts/csv-tool';</script>
