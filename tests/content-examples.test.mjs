@@ -83,24 +83,41 @@ test('compatibility fixture: matching/empty sets, array values and lookups', () 
   assert.equal(rows.find(row => row[0] === 'Tape')?.[2] ?? 'Missing', 'Missing');
 });
 
-test('six guides carry evidence, honest verification, and existing owned downloads', () => {
-  const directory = new URL('src/content/articles/',root);
+test('launch guides and new Notion publications carry appropriate evidence', () => {
+  const directory = new URL('src/content/articles/', root);
   const names = readdirSync(directory).filter(name => name.endsWith('.md'));
-  assert.equal(names.length,6);
+  const launchGuides = new Set([
+    'excel-vs-google-sheets-formulas.md',
+    'google-sheets-filter-examples.md',
+    'import-csv-preserve-zeros-dates.md',
+    'remove-duplicate-rows.md',
+    'sumifs-with-dates.md',
+    'xlookup-not-working.md',
+  ]);
+  for (const name of launchGuides) assert.ok(names.includes(name), 'Missing launch guide: ' + name);
+  assert.ok(names.length >= launchGuides.size);
   for (const name of names) {
     const content = readFileSync(new URL(name,directory),'utf8');
-    assert.match(content,/Native Excel and Google Sheets execution not performed/);
-    assert.match(content,/publishedDate: "2026-10-24"/);
-    assert.match(content,/sources: \[\{/);
+    assert.match(content,/^sources: \[\{/m);
     assert.match(content,/^draft: false$/m);
     assert.match(content,/^## /m);
     assert.ok(!content.includes('[INTERNAL-LINK:'));
-    const downloads = [...content.matchAll(/\]\((\/examples\/content-[^)]+)\)/g)];
-    assert.ok(downloads.length > 0);
-    for (const [,path] of downloads) assert.ok(readFileSync(new URL(`public${path}`,root)).length > 0);
-    const report = readFileSync(new URL(`docs/quality/${name}`,root),'utf8');
-    for (const heading of ['search intent','sources/date/claims','distinct contribution','prior lessons applied','corrections','unverified','postpublication URL currently pending','next improvements']) {
-      assert.ok(report.includes(`## ${heading}`));
+    if (launchGuides.has(name)) {
+      assert.match(content,/Native Excel and Google Sheets execution not performed/);
+      assert.match(content,/^publishedDate: "2026-10-24"$/m);
+      const downloads = [...content.matchAll(/\]\((\/examples\/content-[^)]+)\)/g)];
+      assert.ok(downloads.length > 0);
+      for (const [,filePath] of downloads) assert.ok(readFileSync(new URL('public' + filePath,root)).length > 0);
+      const report = readFileSync(new URL('docs/quality/' + name,root),'utf8');
+      for (const heading of ['search intent','sources/date/claims','distinct contribution','prior lessons applied','corrections','unverified','postpublication URL currently pending','next improvements']) {
+        assert.ok(report.includes('## ' + heading));
+      }
+    } else {
+      // Dynamically published articles need their own provenance; the six fixture requirements do not apply.
+      assert.match(content,/^notionPageId: "[0-9a-f-]{36}"$/m);
+      assert.match(content,/^publishedDate: "\d{4}-\d{2}-\d{2}"$/m);
+      assert.match(content,/^verification: ".*does not establish native Excel or Google Sheets execution\."$/m);
+      assert.match(content,/^author: "GuideHollow Sheets Editorial"$/m);
     }
   }
 });
