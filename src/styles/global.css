@@ -46,6 +46,7 @@
 
 /* Make complete CSV conflict review controls usable on narrow screens. */
 .csv-conflict-pages{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 18px}
+.csv-conflict-pages[hidden]{display:none}
 .csv-conflict-pages .button{min-height:44px;white-space:normal}
 #csv-conflict-page{font-weight:650;margin:12px 0 7px}
 #csv-conflict-table{max-width:100%;overflow-x:auto}
