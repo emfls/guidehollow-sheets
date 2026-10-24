@@ -54,7 +54,7 @@ Date/time	Amount	Channel
 
 This small tab-delimited practice block is **not** a universal CSV import method: it does not preserve arbitrary quoted commas, tabs inside fields, formulas from untrusted files, or timezone offsets. It is a reviewed, fictional alternative for these exact six rows. Microsoft documents [TIME](https://support.microsoft.com/en-us/excel/functions/time-function) as a fraction of a day, and Google documents [DATE](https://support.google.com/docs/answer/3092969?hl=en) as a date value. The original CSV and the formulas here have been compared as data, **not executed in a live Excel or Google Sheets workbook**.
 
-Format A2:A7 as date/time so the time portion is visible. Check `=ISNUMBER(A2)` and fill it down; all six results should be TRUE. A date-looking display does not replace this check. If your real input is text, preserve it and follow the [CSV/date import guide](/data-cleaning/import-csv-preserve-zeros-dates/) before summing it.
+Also check the **amounts** before summing. In a blank cell, enter `=ISNUMBER(B2)` and fill it through B7; all six results should be **TRUE**. A value that looks like `30` but is stored as text can cause an unexpected SUMIFS total. If your actual CSV imported dates or amounts as text, keep the raw source unchanged and follow the [CSV/date import guide](/data-cleaning/import-csv-preserve-zeros-dates/) before calculating.
 
 ## Write the monthly total
 

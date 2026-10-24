@@ -114,6 +114,8 @@ test('SUMIFS paste-ready DATE/TIME rows preserve source CSV timestamps and numer
   assert.equal(sum(row=>row.moment>=octoberStart&&row.moment<novemberStart&&row.channel==='Web'),60);
   assert.equal(sum(row=>row.moment>=octoberStart&&row.moment<=october31),55);
   assert.equal(sum(row=>row.moment>=october31&&row.moment<novemberStart),50);
+  assert.match(article,/=ISNUMBER\(B2\)/, 'Amount cells also need to be numeric');
+  assert.match(article,/all six results should be \*\*TRUE\*\*/, 'Amount check must specify expected results');
   assert.match(article,/\*\*not executed in a live Excel or Google Sheets workbook\*\*/);
   assert.match(article,/https:\/\/support\.google\.com\/docs\/answer\/3092969\?hl=en/);
   assert.match(article,/https:\/\/support\.microsoft\.com\/en-us\/excel\/functions\/time-function/);
