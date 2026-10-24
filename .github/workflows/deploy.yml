@@ -26,6 +26,8 @@ jobs:
       - run: npm run test:publisher
       - run: npm run check
       - run: npm run build
+      - name: Test CSV safety in real Chromium
+        run: npm run test:browser
       - uses: actions/configure-pages@v5
         if: github.event_name != 'pull_request'
       - uses: actions/upload-pages-artifact@v4
