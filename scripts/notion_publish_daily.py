@@ -154,10 +154,7 @@ def safe_inline(items, table_cell=False):
                 raise ValueError('Whitespace/control character in inline link')
             text = '[' + text + '](' + url.replace('(', '%28').replace(')', '%29').replace('<', '%3C').replace('>', '%3E') + ')'
         output.append(text)
-    return ''.join(output)
-
-
-def markdown(block_id):
+    # Adjacent Notion spans carrying the same bold style form one Markdown span.\n    # Without merging, **text ****`CODE`** is invalid CommonMark and renders stray stars.\n    return ''.join(output).replace('****', '')\n\n\ndef markdown(block_id):
     output, previous_list = [], None
     for block in children(block_id):
         kind = block['type']
