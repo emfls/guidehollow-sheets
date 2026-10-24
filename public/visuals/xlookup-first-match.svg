@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 480" role="img" aria-labelledby="title desc">
+<title id="title">Why XLOOKUP returns the first of two matching rows</title>
+<desc id="desc">A lookup for text key 00124 matches two rows, with prices 24 and 26. A default first-to-last exact search chooses the first match, returning 24.</desc>
+<rect width="1200" height="480" rx="24" fill="#f2f7f4"/>
+<text x="57" y="68" font-family="Arial,sans-serif" font-size="33" font-weight="700" fill="#153a3e">Two matching keys. One first result.</text>
+<text x="57" y="104" font-family="Arial,sans-serif" font-size="18" fill="#4b686c">XLOOKUP's default first-to-last search uses the first exact match.</text>
+<rect x="57" y="140" width="530" height="270" rx="14" fill="#fff" stroke="#b7d4c6" stroke-width="2"/>
+<rect x="57" y="140" width="530" height="50" rx="14" fill="#d9ebe0"/>
+<text x="86" y="173" font-family="Arial,sans-serif" font-size="19" font-weight="700" fill="#205b46">Row</text>
+<text x="199" y="173" font-family="Arial,sans-serif" font-size="19" font-weight="700" fill="#205b46">SKU (text)</text>
+<text x="446" y="173" font-family="Arial,sans-serif" font-size="19" font-weight="700" fill="#205b46">Price</text>
+<rect x="72" y="200" width="500" height="42" rx="5" fill="#f8fbf8"/>
+<text x="89" y="228" font-family="Arial,sans-serif" font-size="18" fill="#3d5760">2</text><text x="209" y="228" font-family="Consolas,monospace" font-size="19" fill="#233e43">00123</text><text x="453" y="228" font-family="Arial,sans-serif" font-size="19" fill="#233e43">18</text>
+<rect x="72" y="249" width="500" height="42" rx="5" fill="#def4e5" stroke="#41a573" stroke-width="2"/>
+<text x="89" y="277" font-family="Arial,sans-serif" font-size="18" fill="#17482d">3</text><text x="209" y="277" font-family="Consolas,monospace" font-size="19" font-weight="700" fill="#17482d">00124</text><text x="453" y="277" font-family="Arial,sans-serif" font-size="19" font-weight="700" fill="#17482d">24</text>
+<rect x="72" y="297" width="500" height="42" rx="5" fill="#faf5e8" stroke="#e6d1a4"/>
+<text x="89" y="325" font-family="Arial,sans-serif" font-size="18" fill="#80612b">4</text><text x="209" y="325" font-family="Consolas,monospace" font-size="19" fill="#80612b">00124</text><text x="453" y="325" font-family="Arial,sans-serif" font-size="19" fill="#80612b">26</text>
+<text x="87" y="379" font-family="Arial,sans-serif" font-size="16" fill="#596e63">Rows 3 and 4 both match the lookup key.</text>
+<path d="M614 268 H693" stroke="#2c8964" stroke-width="5" stroke-linecap="round"/><path d="M680 255 L703 268 L680 281" fill="none" stroke="#2c8964" stroke-width="5"/>
+<rect x="733" y="158" width="410" height="236" rx="17" fill="#19483e"/>
+<text x="766" y="207" font-family="Arial,sans-serif" font-size="21" fill="#d1efe2">Lookup key</text>
+<text x="766" y="244" font-family="Consolas,monospace" font-size="29" font-weight="700" fill="#fff">00124</text>
+<text x="766" y="306" font-family="Arial,sans-serif" font-size="21" fill="#d1efe2">Expected first-match price</text>
+<text x="766" y="357" font-family="Arial,sans-serif" font-size="45" font-weight="700" fill="#d5f49a">24</text>
+<text x="57" y="447" font-family="Arial,sans-serif" font-size="17" fill="#577269">Original fictional teaching data; first-match rule from Microsoft XLOOKUP documentation.</text>
+</svg>
