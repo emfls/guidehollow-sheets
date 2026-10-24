@@ -84,6 +84,41 @@ test('duplicate fixture: raw keep-first keys, source rows, counts and totals', (
   assert.deepEqual(rows.map((row,index) => rows.slice(0,index+1).filter(other => other[0] === row[0]).length), [1,2,1,2,1,2]);
 });
 
+test('SUMIFS paste-ready DATE/TIME rows preserve source CSV timestamps and numeric totals',()=>{
+  const article=readFileSync(new URL('src/content/articles/sumifs-with-dates.md',root),'utf8');
+  const source=fixture('sumifs');
+  const header='```text\nDate/time\tAmount\tChannel\n';
+  const start=article.indexOf(header);
+  assert.ok(start>=0,'SUMIFS article needs an actual tab-delimited date formula block');
+  const at=start+'```text\n'.length;
+  const end=article.indexOf('\n```',at);
+  assert.ok(end>at,'Date/time paste block must close');
+  const cells=article.slice(at,end).split('\n').map(line=>line.split('\t'));
+  assert.deepEqual(cells[0],['Date/time','Amount','Channel']);
+  assert.equal(cells.length,7,'Exactly six rows plus the header');
+  const pad=n=>String(n).padStart(2,'0');
+  const records=cells.slice(1).map(([formula,amount,channel],index)=>{
+    const match=/^=DATE\((\d{4}),(\d{1,2}),(\d{1,2})\)(?:\+TIME\((\d{1,2}),(\d{1,2}),(\d{1,2})\))?$/.exec(formula);
+    assert.ok(match,`Record ${index+1} must use a numeric DATE/TIME formula`);
+    const [year,month,day,hour='0',minute='0',second='0']=match.slice(1);
+    const stamp=`${year}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}:${pad(second)}`;
+    assert.deepEqual([stamp,amount,channel],source[index],`Pasted row ${index+2} must equal the original CSV source`);
+    const moment=Date.UTC(Number(year),Number(month)-1,Number(day),Number(hour),Number(minute),Number(second));
+    assert.equal(new Date(moment).toISOString().slice(0,19),stamp,'Date constructor must not silently normalize fields');
+    return {moment,amount:Number(amount),channel};
+  });
+  assert.equal(records.length,6);
+  const octoberStart=Date.UTC(2026,9,1), novemberStart=Date.UTC(2026,10,1), october31=Date.UTC(2026,9,31);
+  const sum=filter=>records.filter(filter).reduce((total,row)=>total+row.amount,0);
+  assert.equal(sum(row=>row.moment>=octoberStart&&row.moment<novemberStart),85);
+  assert.equal(sum(row=>row.moment>=octoberStart&&row.moment<novemberStart&&row.channel==='Web'),60);
+  assert.equal(sum(row=>row.moment>=octoberStart&&row.moment<=october31),55);
+  assert.equal(sum(row=>row.moment>=october31&&row.moment<novemberStart),50);
+  assert.match(article,/\*\*not executed in a live Excel or Google Sheets workbook\*\*/);
+  assert.match(article,/https:\/\/support\.google\.com\/docs\/answer\/3092969\?hl=en/);
+  assert.match(article,/https:\/\/support\.microsoft\.com\/en-us\/excel\/functions\/time-function/);
+});
+
 test('date interval oracle: next month, timestamp end trap, and day interval', () => {
   const rows = fixture('sumifs').map(([stamp,amount,channel]) => ({ time: Date.parse(`${stamp}Z`), amount: Number(amount), channel }));
   assert.ok(rows.every(row => Number.isFinite(row.time) && Number.isFinite(row.amount)));
