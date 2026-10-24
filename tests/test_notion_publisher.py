@@ -524,6 +524,12 @@ class PublisherTests(unittest.TestCase):
                     self.assertIn('loading="lazy"', first)
                     self.assertIn('data-asset-sha256=', first)
                     self.assertIn('Original editorial diagram', first)
+                    caption = figure['image']['caption'][0]
+                    original_caption = caption['plain_text']
+                    caption['plain_text'] = original_caption.replace('\\n', '<br />')
+                    notion_editor_format = p.markdown('test-image')
+                    self.assertEqual(first, notion_editor_format, 'Notion inline <br /> caption formatting must preserve three metadata fields')
+                    caption['plain_text'] = original_caption
                     asset.write_text(asset.read_text().replace('#eeeeee', '#dddddd'))
                     second = p.markdown('test-image')
                     self.assertNotEqual(first, second, 'Asset changes must change the generated source digest')
