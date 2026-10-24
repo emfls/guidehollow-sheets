@@ -82,6 +82,15 @@ class PublisherTests(unittest.TestCase):
     def stage(self):
         return p.stage()
 
+    def test_adjacent_bold_code_spans_do_not_break_markdown(self):
+        parts = [
+            {"plain_text": "Use ", "annotations": {"bold": True}},
+            {"plain_text": "IFNA", "annotations": {"bold": True, "code": True}},
+            {"plain_text": " for lookup misses", "annotations": {"bold": True}},
+        ]
+        self.assertEqual(p.safe_inline(parts), "**Use `IFNA` for lookup misses**")
+        self.assertNotIn("****", p.safe_inline(parts))
+
     def test_success_stages_honest_frontmatter_and_ledger_without_notion_write(self):
         result = self.stage()
         self.assertEqual(result['status'], 'STAGED')
