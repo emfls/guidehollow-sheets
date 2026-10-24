@@ -3,3 +3,12 @@ const nav=document.querySelector<HTMLElement>('#main-nav');
 button?.addEventListener('click',()=>{const open=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(open));nav?.classList.toggle('open',open);});
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&button?.getAttribute('aria-expanded')==='true'){button.setAttribute('aria-expanded','false');nav?.classList.remove('open');button.focus();}});
 document.querySelectorAll<HTMLPreElement>('.prose pre').forEach(pre=>{const code=pre.querySelector('code');if(!code)return;const b=document.createElement('button');b.type='button';b.className='copy-code';b.textContent='Copy';b.setAttribute('aria-label','Copy this example');b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(code.textContent??'');b.textContent='Copied';}catch{b.textContent='Select text to copy';}window.setTimeout(()=>b.textContent='Copy',1800);});pre.append(b);});
+
+// Keep the article visible sooner on phones; desktop readers retain the full contents list.
+const articleToc = document.querySelector<HTMLDetailsElement>('.toc details');
+if (articleToc) {
+  const wideScreen = window.matchMedia('(min-width: 761px)');
+  const updateTocForWidth = () => { articleToc.open = wideScreen.matches; };
+  updateTocForWidth();
+  wideScreen.addEventListener('change', updateTocForWidth);
+}
