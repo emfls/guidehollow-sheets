@@ -227,6 +227,10 @@ async function run() {
     assert.ok(metrics.lastColumnRight<=metrics.tableRight+2,
       'The last difference column must be reachable by scrolling the table');
     for (const label of ['menu','read','check','previous','next','download','report']) {
+      // On PRs the public URL serves the PREVIOUS release; don't require the
+      // new menu fix there before it has been deployed. Postdeploy must gate it.
+      if (label==='menu' && target==='production'
+          && process.env.CSV_MOBILE_REQUIRE_MENU_44!=='true') continue;
       assert.ok(metrics[label].h>=44,label+' must have at least a 44px tall touch target');
     }
     mobileObservations.push(metrics);
