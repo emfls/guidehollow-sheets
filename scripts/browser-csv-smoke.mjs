@@ -215,7 +215,7 @@ async function run() {
 
   // The exercise should only fetch built assets from its own local server.
   // This is a scoped network observation, not a general privacy/security audit.
-  const httpRequests = page.requests.filter(item => /^https?:\\/\\//.test(item.url));
+  const httpRequests = page.requests.filter(item => item.url.startsWith('http:') || item.url.startsWith('https:'));
   assert.ok(httpRequests.length > 0,'Expected observable local HTTP requests');
   assert.deepEqual(httpRequests.filter(item => !item.url.startsWith(base + '/')),[],
     'CSV exercise must not send requests to external HTTP endpoints');
