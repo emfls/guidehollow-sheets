@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 485" role="img" aria-labelledby="title desc">
+<title id="title">IFERROR versus IFNA: a broken lookup should stay visible</title>
+<desc id="desc">Both formulas use an invalid column index of 3 in a two-column VLOOKUP range. IFERROR returns NOT FOUND and hides the problem, while IFNA preserves the #REF! error for investigation.</desc>
+<rect width="1200" height="485" rx="24" fill="#f2f7f4"/>
+<text x="58" y="67" font-family="Arial,sans-serif" font-size="33" font-weight="700" fill="#153a3e">An absent value is not a broken formula</text>
+<text x="58" y="103" font-family="Arial,sans-serif" font-size="18" fill="#4b686c">Same invalid lookup: asking for column 3 in a range that has only 2 columns.</text>
+<rect x="58" y="135" width="524" height="276" rx="19" fill="#fff" stroke="#e1b2a4" stroke-width="2"/>
+<rect x="58" y="135" width="524" height="62" rx="19" fill="#fbe7e1"/>
+<text x="84" y="174" font-family="Arial,sans-serif" font-size="26" font-weight="700" fill="#8b3b2c">IFERROR — catches all errors</text>
+<rect x="83" y="218" width="475" height="76" rx="9" fill="#f8f2ee"/>
+<text x="98" y="247" font-family="Consolas,monospace" font-size="16" fill="#633b2e">=IFERROR(VLOOKUP(F2,G2:H4,3,FALSE),</text>
+<text x="98" y="275" font-family="Consolas,monospace" font-size="16" fill="#633b2e">"NOT FOUND")</text>
+<text x="84" y="334" font-family="Arial,sans-serif" font-size="20" fill="#70443b">Displayed result</text>
+<text x="84" y="382" font-family="Arial,sans-serif" font-size="31" font-weight="700" fill="#9a3524">NOT FOUND</text>
+<rect x="618" y="135" width="524" height="276" rx="19" fill="#fff" stroke="#8ab9a7" stroke-width="2"/>
+<rect x="618" y="135" width="524" height="62" rx="19" fill="#deeee5"/>
+<text x="644" y="174" font-family="Arial,sans-serif" font-size="26" font-weight="700" fill="#165f49">IFNA — catches #N/A only</text>
+<rect x="643" y="218" width="475" height="76" rx="9" fill="#edf5ef"/>
+<text x="658" y="247" font-family="Consolas,monospace" font-size="16" fill="#285d49">=IFNA(VLOOKUP(F2,G2:H4,3,FALSE),</text>
+<text x="658" y="275" font-family="Consolas,monospace" font-size="16" fill="#285d49">"NOT FOUND")</text>
+<text x="644" y="334" font-family="Arial,sans-serif" font-size="20" fill="#48675a">Displayed result</text>
+<text x="644" y="382" font-family="Arial,sans-serif" font-size="31" font-weight="700" fill="#116344">#REF! — fix the range</text>
+<text x="58" y="456" font-family="Arial,sans-serif" font-size="17" fill="#4b686c">Illustrative formula logic based on documented behavior; not a screenshot or native-app test.</text>
+</svg>
