@@ -57,6 +57,21 @@ export function findDuplicates(rows: readonly CSVRow[], columns?: readonly numbe
   return { kept, duplicates, before: rows.length, after: kept.length, removed: duplicates.length };
 }
 
+/** Identify rows that match on chosen keys but disagree on other values.
+ *  Record indices refer to data rows; a header is not implicitly removed.
+ */
+export function conflictingDuplicates(
+  rows: readonly CSVRow[],
+  duplicates: readonly { index: number; firstIndex: number; row: CSVRow }[],
+): { index: number; firstIndex: number; differingColumns: number[] }[] {
+  return duplicates.flatMap(({ index, firstIndex, row }) => {
+    const original = rows[firstIndex];
+    if (!original) throw new Error('Missing retained row for a duplicate.');
+    const differingColumns = row.flatMap((cell, column) => cell !== original[column] ? [column] : []);
+    return differingColumns.length ? [{ index, firstIndex, differingColumns }] : [];
+  });
+}
+
 export function hasFormulaRisk(value: string): boolean {
   return /^[\s\uFEFF]*[=+\-@]/.test(value) || /^[\t\r\n]/.test(value);
 }
