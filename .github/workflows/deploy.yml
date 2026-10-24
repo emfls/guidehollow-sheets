@@ -28,6 +28,11 @@ jobs:
       - run: npm run build
       - name: Test CSV safety in real Chromium
         run: npm run test:browser
+      - name: Test public CSV safety before merge
+        if: github.event_name == 'pull_request'
+        env:
+          CSV_BROWSER_TARGET: production
+        run: npm run test:browser
       - uses: actions/configure-pages@v5
         if: github.event_name != 'pull_request'
       - uses: actions/upload-pages-artifact@v4
@@ -47,3 +52,18 @@ jobs:
     steps:
       - uses: actions/deploy-pages@v4
         id: deployment
+  verify-live:
+    name: Verify public CSV safety after Pages deployment
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Test deployed CSV controls in real Chromium
+        env:
+          CSV_BROWSER_TARGET: production
+        run: node scripts/browser-csv-smoke.mjs
