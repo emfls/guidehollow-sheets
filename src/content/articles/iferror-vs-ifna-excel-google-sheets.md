@@ -16,9 +16,9 @@ notionPageId: "402db4c0-a991-815b-be83-c3f4cc3dc2eb"
 
 ## Answer first: use the narrowest error handler that matches the problem
 
-**Use ****`IFNA`**** when a missing lookup match is an expected outcome. Use ****`IFERROR`**** only when you have decided that every error from a specific calculation should receive the same fallback.** For a broken reference, wrong argument or invalid input, showing a visible error is often safer than replacing it with an empty cell.
+**Use `IFNA` when a missing lookup match is an expected outcome. Use `IFERROR` only when you have decided that every error from a specific calculation should receive the same fallback.** For a broken reference, wrong argument or invalid input, showing a visible error is often safer than replacing it with an empty cell.
 
-Both Excel and Google Sheets support these functions. Microsoft documents `IFERROR(value, value_if_error)` as handling multiple formula errors, including `#DIV/0!`, `#REF!` and `#N/A`. Microsoft and Google document `IFNA` as handling **only ****`#N/A`**. Google's Sheets version of `IFERROR` also permits the replacement argument to be omitted; the Excel syntax documents that argument as required.
+Both Excel and Google Sheets support these functions. Microsoft documents `IFERROR(value, value_if_error)` as handling multiple formula errors, including `#DIV/0!`, `#REF!` and `#N/A`. Microsoft and Google document `IFNA` as handling **only `#N/A`**. Google's Sheets version of `IFERROR` also permits the replacement argument to be omitted; the Excel syntax documents that argument as required.
 
 This distinction matters when a workbook is used to make a decision. A dashboard full of blank-looking cells may look tidy while hiding a broken data import or formula. The safer goal is **understand, classify and then handle the error**, not simply make a red error indicator disappear.
 
