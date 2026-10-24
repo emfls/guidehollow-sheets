@@ -1,12 +1,12 @@
 /**
  * Deterministic real-Chromium CSV smoke test of the built AND deployed site.
- * No NPM/browser automation dependencies or CSV upload/export operations.
+ * No browser automation dependencies. Uses synthetic local files for actual CSV/JSON download verification.
  * Uses Chrome DevTools Protocol to inspect true DOM properties and click behavior.
  */
 import assert from 'node:assert/strict';
 import {spawn, spawnSync} from 'node:child_process';
 import {createServer} from 'node:http';
-import {mkdtemp, readFile, rm} from 'node:fs/promises';
+import {mkdir, mkdtemp, readFile, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 
@@ -98,7 +98,7 @@ async function startChrome() {
     if (result.exceptionDetails) throw new Error('Browser evaluation failed: ' + JSON.stringify(result.exceptionDetails));
     return result.result.value;
   }
-  return {send:(method,params)=>send(method,params,sessionId), evaluate, requests};
+  return {send:(method,params)=>send(method,params,sessionId), browserSend:(method,params)=>send(method,params), evaluate, requests};
 }
 
 async function run() {
@@ -108,6 +108,38 @@ async function run() {
     ? 'https://sheets.guidehollow.com'
     : await startStaticServer();
   const page = await startChrome();
+  const fileDir = path.join(profile, 'synthetic-test-files');
+  const downloadDir = path.join(profile, 'local-downloads');
+  await mkdir(fileDir,{recursive:true});
+  await mkdir(downloadDir,{recursive:true});
+  await page.browserSend('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:downloadDir});
+  const exported = async (filename) => {
+    const location=path.join(downloadDir,filename);
+    for(let i=0;i<80;i++) {
+      try {
+        const bytes=await readFile(location);
+        if(bytes.length>0) return bytes.toString('utf8');
+      } catch {}
+      await delay(100);
+    }
+    throw new Error('Real Chromium download not found: '+filename);
+  };
+  const attachFile = async (filename,bytes) => {
+    const local=path.join(fileDir,filename);
+    await writeFile(local,bytes);
+    const {root}=await page.send('DOM.getDocument');
+    const {nodeId}=await page.send('DOM.querySelector',{nodeId:root.nodeId,selector:'#csv-file'});
+    assert.ok(nodeId,'CSV file input missing');
+    await page.send('DOM.setFileInputFiles',{files:[local],nodeId});
+  };
+  const pollState=async (fragment,field='#csv-status')=>{
+    for(let i=0;i<70;i++) {
+      const value=await page.evaluate(`return document.querySelector('${field}').textContent;`);
+      if(value.includes(fragment)) return value;
+      await delay(100);
+    }
+    throw new Error('Timed out expecting '+fragment+' in '+field);
+  };
   await page.send('Page.navigate', {url:base + '/tools/csv-duplicate-checker/'});
   let ready = false;
   for(let i=0;i<200;i++) {
@@ -196,6 +228,28 @@ async function run() {
   ].join('\n'));
   assert.equal(accepted.approved,true);
   assert.equal(accepted.downloadDisabled,false,'Both deliberate checkboxes should enable local CSV export');
+
+  // Verify that the browser genuinely saves the right CSV and full review JSON.
+  // This fixture has 12 synthetic data rows and no real user data.
+  await page.evaluate("document.querySelector('#csv-download').click();");
+  const conflictingCSV=await exported('cleaned.csv');
+  assert.equal(conflictingCSV,'id,price\r\n001,1\r\n',
+    'Actual exported conflict CSV must retain only the first keyed record');
+  await page.evaluate("document.querySelector('#csv-conflict-report').click();");
+  const review=JSON.parse(await exported('csv-conflict-review.json'));
+  assert.equal(review.totalConflicts,11);
+  assert.equal(review.differences.length,11);
+  assert.deepEqual(review.differences.at(-1),{
+    keptRecord:2,removedRecord:13,
+    changes:[{column:2,name:'2: price',kept:'1',removed:'12'}]
+  },'Downloaded JSON must expose all values for the last conflict');
+  console.log('CSV REAL DOWNLOAD (conflicts) ' + JSON.stringify({
+    target,exportedCSV:conflictingCSV,reviewCount:review.differences.length,
+    finalDifference:review.differences.at(-1)
+  }));
+  // Clear the first download before the next independent export.
+  await rm(path.join(downloadDir,'cleaned.csv'));
+
 
   // Measure mobile browser layout and control dimensions at two phone widths.
   const mobileObservations = [];
@@ -300,6 +354,86 @@ async function run() {
   assert.deepEqual(changedInput,
     {resultsHidden:true,optionsHidden:true,approvalHidden:true,downloadDisabled:true},
     'Editing source CSV must invalidate the prior results, approval and export');
+
+  // Exercise the actual browser file input path (not a fake change event) with
+  // local UTF-8 CSV files. Prove that export preserves literals, quotes, newlines,
+  // leading zeros, and first-occurrence ordering.
+  await page.evaluate("document.querySelector('#csv-reset').click();");
+  await attachFile('empty.csv',Buffer.alloc(0));
+  await pollState('UTF-8 file loaded');
+  const empty=await page.evaluate([
+    "document.querySelector('#csv-load').click();",
+    "return {message:document.querySelector('#csv-error').textContent,",
+    "  alert:document.querySelector('#csv-error').getAttribute('role'),",
+    "  downloadDisabled:document.querySelector('#csv-download').disabled,",
+    "  optionsHidden:document.querySelector('#csv-options').hidden};"
+  ].join('\n'));
+  assert.match(empty.message,/CSV is empty/);
+  assert.equal(empty.alert,'alert');
+  assert.equal(empty.downloadDisabled,true);
+  assert.equal(empty.optionsHidden,true);
+
+  const malformed=await page.evaluate([
+    "const input=document.querySelector('#csv-input');",
+    "input.value='id,name\\n001,\"unclosed';",
+    "input.dispatchEvent(new Event('input',{bubbles:true}));",
+    "document.querySelector('#csv-load').click();",
+    "return {message:document.querySelector('#csv-error').textContent,",
+    "  disabled:document.querySelector('#csv-download').disabled};"
+  ].join('\n'));
+  assert.match(malformed.message,/Unclosed quoted field/);
+  assert.equal(malformed.disabled,true);
+
+  await page.evaluate("document.querySelector('#csv-reset').click();");
+  await attachFile('too-large.csv',Buffer.alloc(2*1024*1024+1,97));
+  await pollState('File exceeds 2 MiB','#csv-error');
+  assert.equal(await page.evaluate("return document.querySelector('#csv-download').disabled;"),true);
+
+  await page.evaluate("document.querySelector('#csv-reset').click();");
+  await attachFile('not-utf8.csv',Buffer.from([0x69,0x64,0x0a,0xff]));
+  await pollState('Cannot read this file as UTF-8','#csv-error');
+  assert.equal(await page.evaluate("return document.querySelector('#csv-download').disabled;"),true);
+
+  await page.evaluate("document.querySelector('#csv-reset').click();");
+  const fullCSV='\uFEFFid,name,note\r\n001,"Ada, Kim","=2+2"\r\n001,"Ada, Kim","=2+2"\r\n002,"Han ""Sky""","Line one\nLine two"\r\n002,"Han ""Sky""","Line one\nLine two"\r\n003,Ji,plain\r\n';
+  await attachFile('sample-with-bom.csv',Buffer.from(fullCSV,'utf8'));
+  await pollState('UTF-8 file loaded');
+  const processed=await page.evaluate([
+    "document.querySelector('#csv-load').click();",
+    "document.querySelector('#csv-check').click();",
+    "return {counts:document.querySelector('#csv-counts').textContent,",
+    "  conflictHidden:document.querySelector('#csv-conflicts').hidden,",
+    "  risk:document.querySelector('#csv-risk').textContent,",
+    "  alertHidden:document.querySelector('#csv-error').hidden,",
+    "  downloadDisabled:document.querySelector('#csv-download').disabled};"
+  ].join('\n'));
+  assert.match(processed.counts,/Before: 5 data rows. Removed: 2 duplicate rows. After: 3 data rows/);
+  assert.equal(processed.conflictHidden,true,'Exact duplicates must not trigger different-values review');
+  assert.match(processed.risk,/1 exported cell/);
+  assert.equal(processed.alertHidden,true,'Successfully read file must clear prior errors');
+  assert.equal(processed.downloadDisabled,true,'Formula warning acknowledgement still required');
+  await page.evaluate([
+    "document.querySelector('#csv-ack').click();",
+    "if(document.querySelector('#csv-download').disabled) throw new Error('Acknowledged CSV should be downloadable');",
+    "document.querySelector('#csv-download').click();"
+  ].join('\n'));
+  const cleanedCSV=await exported('cleaned.csv');
+  const expectedCSV='id,name,note\r\n001,"Ada, Kim",=2+2\r\n002,"Han ""Sky""","Line one\nLine two"\r\n003,Ji,plain\r\n';
+  assert.equal(cleanedCSV,expectedCSV,
+    'Actual UTF-8 CSV bytes must preserve the original text values and CRLF records');
+  assert.ok(!cleanedCSV.startsWith('\uFEFF'),'Export must omit input BOM');
+  const reset=await page.evaluate([
+    "document.querySelector('#csv-reset').click();",
+    "return {text:document.querySelector('#csv-input').value,",
+    "  file:document.querySelector('#csv-file').value,",
+    "  resultsHidden:document.querySelector('#csv-results').hidden,",
+    "  downloadDisabled:document.querySelector('#csv-download').disabled};"
+  ].join('\n'));
+  assert.deepEqual(reset,{text:'',file:'',resultsHidden:true,downloadDisabled:true},
+    'Reset after real export must clear the file and prevent a stale download');
+  console.log('CSV REAL FILE ROUNDTRIP ' + JSON.stringify({
+    target,empty,malformed,processed,exportedCSV:cleanedCSV,reset
+  }));
 
   // Local build can prove this isolated test makes only same-origin GET requests.
   // The public site can load unrelated third-party scripts; avoid conflating their
