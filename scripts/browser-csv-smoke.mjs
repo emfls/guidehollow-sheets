@@ -197,6 +197,87 @@ async function run() {
   assert.equal(accepted.approved,true);
   assert.equal(accepted.downloadDisabled,false,'Both deliberate checkboxes should enable local CSV export');
 
+  // Measure mobile browser layout and control dimensions at two phone widths.
+  const mobileObservations = [];
+  for (const width of [360,390]) {
+    await page.send('Emulation.setDeviceMetricsOverride', {width,height:800,deviceScaleFactor:3,mobile:true});
+    await page.send('Emulation.setTouchEmulationEnabled', {enabled:true,maxTouchPoints:1});
+    const metrics = await page.evaluate([
+      "const table=document.querySelector('#csv-conflict-table');",
+      "const last=table.querySelector('tbody tr:first-child td:last-child');",
+      "const dims=id=>{const r=document.querySelector(id).getBoundingClientRect();return {w:Math.round(r.width),h:Math.round(r.height),left:Math.round(r.left),right:Math.round(r.right)};};",
+      "table.scrollLeft=table.scrollWidth;",
+      "const result={viewport:innerWidth,rootWidth:document.documentElement.scrollWidth,",
+      "bodyWidth:document.body.scrollWidth,tableClient:table.clientWidth,tableScroll:table.scrollWidth,",
+      "tableOffset:table.scrollLeft,lastColumnRight:Math.round(last.getBoundingClientRect().right),",
+      "tableRight:Math.round(table.getBoundingClientRect().right),",
+      "menu:dims('#menu-toggle'),read:dims('#csv-load'),check:dims('#csv-check'),",
+      "previous:dims('#csv-conflict-prev'),next:dims('#csv-conflict-next'),",
+      "download:dims('#csv-download'),report:dims('#csv-conflict-report'),",
+      "keyboardFocusTest:document.querySelector('#csv-conflict-prev').tabIndex>=0};",
+      "table.scrollLeft=0;return result;"
+    ].join('\n'));
+    // Prevent any document-wide sideways swipe; the comparison table must
+    // be independently scrollable until its final values are visible.
+    assert.equal(metrics.viewport,width,'Mobile viewport must honor the width metadata');
+    assert.ok(metrics.rootWidth<=width+1 && metrics.bodyWidth<=width+1,
+      'Mobile CSV page must not overflow the root viewport');
+    assert.ok(metrics.tableScroll>metrics.tableClient && metrics.tableOffset>0,
+      'Five-column conflict comparison must scroll independently on phones');
+    assert.ok(metrics.lastColumnRight<=metrics.tableRight+2,
+      'The last difference column must be reachable by scrolling the table');
+    for (const label of ['menu','read','check','previous','next','download','report']) {
+      // On PRs the public URL serves the PREVIOUS release; don't require the
+      // new menu fix there before it has been deployed. Postdeploy must gate it.
+      if (label==='menu' && target==='production'
+          && process.env.CSV_MOBILE_REQUIRE_MENU_44!=='true') continue;
+      assert.ok(metrics[label].h>=44,label+' must have at least a 44px tall touch target');
+    }
+    mobileObservations.push(metrics);
+  }
+
+  // Send real keyboard events through Chrome, rather than synthesizing clicks
+  // in page JavaScript. Verify mobile navigation and conflict review pagination.
+  const pressKey=async (key,code,number,modifiers=0)=>{
+    await page.send('Input.dispatchKeyEvent',{type:'rawKeyDown',key,code,windowsVirtualKeyCode:number,modifiers});
+    // CDP rawKeyDown alone does not synthesize the Enter character event
+    // needed for a native button's activation behavior.
+    if (key==='Enter') await page.send('Input.dispatchKeyEvent',{
+      type:'char',key,code,text:'\r',unmodifiedText:'\r',windowsVirtualKeyCode:number,modifiers
+    });
+    await page.send('Input.dispatchKeyEvent',{type:'keyUp',key,code,windowsVirtualKeyCode:number,modifiers});
+  };
+  assert.equal(await page.evaluate(
+    "document.querySelector('#menu-toggle').focus(); return document.activeElement.id;"),'menu-toggle');
+  await pressKey('Enter','Enter',13);
+  assert.equal(await page.evaluate(
+    "return document.querySelector('#menu-toggle').getAttribute('aria-expanded');"),'true',
+    'Keyboard Enter must open the mobile menu');
+  assert.equal(await page.evaluate("return document.querySelector('#main-nav').classList.contains('open');"),true);
+  await pressKey('Escape','Escape',27);
+  assert.equal(await page.evaluate(
+    "return document.querySelector('#menu-toggle').getAttribute('aria-expanded');"),'false',
+    'Escape must dismiss mobile navigation');
+
+  assert.equal(await page.evaluate(
+    "document.querySelector('#csv-conflict-prev').focus(); return document.activeElement.id;"),'csv-conflict-prev');
+  await pressKey('Enter','Enter',13);
+  assert.match(await page.evaluate("return document.querySelector('#csv-conflict-page').textContent;"),/page 1 of 2/,
+    'Keyboard Enter must navigate to previous differences');
+  assert.equal(await page.evaluate(
+    "document.querySelector('#csv-conflict-next').focus(); return document.activeElement.id;"),'csv-conflict-next');
+  await pressKey('Tab','Tab',9);
+  assert.equal(await page.evaluate("return document.activeElement.id;"),'csv-conflict-report',
+    'Tab from next differences must reach the full-report button');
+  await pressKey('Tab','Tab',9,8);
+  assert.equal(await page.evaluate("return document.activeElement.id;"),'csv-conflict-next',
+    'Shift+Tab must return to the next-differences button');
+  await pressKey('Enter','Enter',13);
+  assert.match(await page.evaluate("return document.querySelector('#csv-conflict-page').textContent;"),/page 2 of 2/,
+    'Keyboard Enter must navigate to next differences');
+  await page.send('Emulation.clearDeviceMetricsOverride');
+  await page.send('Emulation.setTouchEmulationEnabled',{enabled:false});
+  console.log('CSV MOBILE DOM AUDIT ' + JSON.stringify({target,mobileObservations}));
   const invalidated = await page.evaluate([
     "const checks=[...document.querySelectorAll('#csv-columns input')];",
     "checks[1].checked=true; checks[1].dispatchEvent(new Event('change',{bubbles:true}));",

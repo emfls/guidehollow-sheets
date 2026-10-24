@@ -66,4 +66,5 @@ jobs:
       - name: Test deployed CSV controls in real Chromium
         env:
           CSV_BROWSER_TARGET: production
+          CSV_MOBILE_REQUIRE_MENU_44: 'true'
         run: node scripts/browser-csv-smoke.mjs

@@ -53,3 +53,6 @@
 #csv-conflict-table{max-width:100%;overflow-x:auto}
 #csv-conflict-table td{max-width:38ch;white-space:pre-wrap;overflow-wrap:anywhere;vertical-align:top}
 @media(max-width:520px){.csv-conflict-pages .button{flex:1 1 100%}}
+/* Keep the mobile navigation control at a reliable 44px minimum tap target. */
+@media(max-width:760px){.menu-toggle{min-height:44px;min-width:44px}}
+
