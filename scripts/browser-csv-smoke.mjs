@@ -240,6 +240,11 @@ async function run() {
   // in page JavaScript. Verify mobile navigation and conflict review pagination.
   const pressKey=async (key,code,number,modifiers=0)=>{
     await page.send('Input.dispatchKeyEvent',{type:'rawKeyDown',key,code,windowsVirtualKeyCode:number,modifiers});
+    // CDP rawKeyDown alone does not synthesize the Enter character event
+    // needed for a native button's activation behavior.
+    if (key==='Enter') await page.send('Input.dispatchKeyEvent',{
+      type:'char',key,code,text:'\r',unmodifiedText:'\r',windowsVirtualKeyCode:number,modifiers
+    });
     await page.send('Input.dispatchKeyEvent',{type:'keyUp',key,code,windowsVirtualKeyCode:number,modifiers});
   };
   assert.equal(await page.evaluate(
