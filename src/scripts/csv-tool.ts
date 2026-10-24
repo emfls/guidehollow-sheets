@@ -150,6 +150,7 @@ element('csv-load').addEventListener('click', () => {
 });
 mode.addEventListener('change', () => { columns.hidden = mode.value !== 'selected'; invalidateResult(); });
 element('csv-check').addEventListener('click', () => {
+  resetConflicts();
   message('');
   try {
     const keys = mode.value === 'selected' ? Array.from(columns.querySelectorAll<HTMLInputElement>('input:checked'), item => Number(item.value)) : undefined;
