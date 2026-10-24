@@ -50,6 +50,7 @@ test('review approval stays disabled until pages or full local report are availa
  assert.match(page,/id="csv-conflict-ack" type="checkbox" disabled/);
  assert.match(script,/visitedConflictPages\.add\(conflictPage\)/);
  assert.match(script,/conflictReviewReady\(conflictCount, CONFLICT_PAGE_SIZE, visitedConflictPages, reportRequested\)/);
+ assert.match(script,/conflictAckRow\.hidden = !ready/);
  assert.match(script,/conflictAck\.disabled = !ready/);
  assert.match(script,/reportRequested = true/);
  assert.match(script,/application\/json;charset=utf-8/);
