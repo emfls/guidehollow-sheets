@@ -87,7 +87,7 @@ test('compatibility fixture: matching/empty sets, array values and lookups', () 
 test('COUNTIF/COUNTIFS practice CSV matches the approved five-row visual and every worked total', () => {
   const source = readFileSync(new URL('public/examples/countif-countifs-five-orders.csv',root),'utf8');
   assert.equal(source.split('\n')[0], 'Region,Status,Value');
-  const rows = fixture('countif-countifs-five-orders');
+  const rows = source.trimEnd().split('\n').slice(1).map(line => line.split(','));
   assert.deepEqual(rows, [
     ['East','Paid','120'],
     ['West','Paid','90'],
