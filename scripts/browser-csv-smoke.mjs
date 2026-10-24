@@ -65,8 +65,12 @@ async function startChrome() {
 
   let sequence = 0;
   const pending = new Map();
+  const requests = [];
   socket.addEventListener('message', event => {
     const message = JSON.parse(event.data);
+    if (message.method === 'Network.requestWillBeSent') {
+      requests.push({url:message.params.request.url,method:message.params.request.method});
+    }
     if (!message.id) return;
     const pair = pending.get(message.id);
     if (!pair) return;
@@ -85,13 +89,14 @@ async function startChrome() {
   const {sessionId} = await send('Target.attachToTarget', {targetId,flatten:true});
   await send('Runtime.enable',{},sessionId);
   await send('Page.enable',{},sessionId);
+  await send('Network.enable',{},sessionId);
   async function evaluate(code) {
     const result = await send('Runtime.evaluate', {expression:'(function(){' + code + '})()',
       returnByValue:true,awaitPromise:true},sessionId);
     if (result.exceptionDetails) throw new Error('Browser evaluation failed: ' + JSON.stringify(result.exceptionDetails));
     return result.result.value;
   }
-  return {send:(method,params)=>send(method,params,sessionId), evaluate};
+  return {send:(method,params)=>send(method,params,sessionId), evaluate, requests};
 }
 
 async function run() {
@@ -105,6 +110,20 @@ async function run() {
     await delay(100);
   }
   assert(ready, 'CSV tool did not load');
+
+  // Real DOM assertions before any CSV is read, including a forged click event
+  // that deliberately bypasses normal disabled-button browser dispatch.
+  const beforeRead = await page.evaluate([
+    "const button = document.querySelector('#csv-download');",
+    "const before = document.querySelector('#csv-status').textContent;",
+    "button.click();",
+    "button.dispatchEvent(new MouseEvent('click',{bubbles:true}));",
+    "return {disabled:button.disabled,resultsHidden:document.querySelector('#csv-results').hidden,",
+    "  conflictHidden:document.querySelector('#csv-conflict-ack-row').hidden,",
+    "  statusUnchanged:document.querySelector('#csv-status').textContent===before};"
+  ].join('\\n'));
+  assert.deepEqual(beforeRead,{disabled:true,resultsHidden:true,conflictHidden:true,statusUnchanged:true},
+    'Both native and synthetic premature download clicks must be inert');
 
   const initial = await page.evaluate([
     "const input = document.querySelector('#csv-input');",
@@ -180,6 +199,28 @@ async function run() {
   ].join('\n'));
   assert.deepEqual(invalidated,{resultsHidden:true,approvalHidden:true,downloadDisabled:true},
     'Changing matching keys must erase the previous reviewed/exportable state');
+
+  const changedInput = await page.evaluate([
+    "const textarea=document.querySelector('#csv-input');",
+    "textarea.value += '\\n001,13';",
+    "textarea.dispatchEvent(new Event('input',{bubbles:true}));",
+    "return {resultsHidden:document.querySelector('#csv-results').hidden,",
+    "  optionsHidden:document.querySelector('#csv-options').hidden,",
+    "  approvalHidden:document.querySelector('#csv-conflict-ack-row').hidden,",
+    "  downloadDisabled:document.querySelector('#csv-download').disabled};"
+  ].join('\\n'));
+  assert.deepEqual(changedInput,
+    {resultsHidden:true,optionsHidden:true,approvalHidden:true,downloadDisabled:true},
+    'Editing source CSV must invalidate the prior results, approval and export');
+
+  // The exercise should only fetch built assets from its own local server.
+  // This is a scoped network observation, not a general privacy/security audit.
+  const httpRequests = page.requests.filter(item => /^https?:\\/\\//.test(item.url));
+  assert.ok(httpRequests.length > 0,'Expected observable local HTTP requests');
+  assert.deepEqual(httpRequests.filter(item => !item.url.startsWith(base + '/')),[],
+    'CSV exercise must not send requests to external HTTP endpoints');
+  assert.deepEqual(httpRequests.filter(item => item.method !== 'GET'),[],
+    'CSV exercise must not send data using HTTP requests');
   console.log('PASS: actual Chromium DOM confirms 11 differences, locked review, final row, dual consent and reset.');
 }
 
