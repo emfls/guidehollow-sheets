@@ -38,6 +38,28 @@ test('CSV preservation fixture: exact strings and unresolved ambiguous dates', (
   assert.deepEqual([year,month,day], [2026,10,24]);
 });
 
+test('CSV preservation tab-paste example reproduces original CSV values', () => {
+  const article = readFileSync(new URL('src/content/articles/import-csv-preserve-zeros-dates.md',root),'utf8');
+  const source = readFileSync(new URL('public/examples/content-import.csv',root),'utf8').trimEnd();
+  const beginning = '```text\naccount_id\tevent_date_raw\tamount_raw\n';
+  const start = article.indexOf(beginning);
+  assert.ok(start >= 0, 'Paste block must have literal tab separators, not commas or spaces');
+  const snippetStart = start + '```text\n'.length;
+  const snippetEnd = article.indexOf('\n```',snippetStart);
+  assert.ok(snippetEnd > snippetStart, 'Copyable TSV block must close');
+  const snippet = article.slice(snippetStart,snippetEnd);
+  const sourceCells = source.split('\n').map(row => row.split(','));
+  const pastedCells = snippet.split('\n').map(row => row.split('\t'));
+  assert.deepEqual(pastedCells,sourceCells,'Each pasted cell must match the original CSV');
+  assert.equal(pastedCells.length,5,'Four sample records plus one header');
+  assert.ok(pastedCells.every(row => row.length === 3),'Exactly three columns');
+  assert.ok(article.includes('Format → Number → Plain text'));
+  assert.ok(article.includes('headings occupy **A1:C1**'));
+  assert.ok(article.includes('run the formulas in the next section'));
+  assert.ok(article.includes('not a general CSV parser'));
+  assert.ok(article.includes('https://support.google.com/docs/answer/46973?hl=en'));
+});
+
 test('duplicate fixture: raw keep-first keys, source rows, counts and totals', () => {
   const rows = fixture('duplicates');
   const keep = columns => {

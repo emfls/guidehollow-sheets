@@ -6,7 +6,7 @@ category: "data-cleaning"
 tags: ["CSV", "leading zeros", "dates", "import"]
 publishedDate: "2026-10-24"
 updatedDate: "2026-10-24"
-sources: [{"title": "Microsoft: Keeping leading zeros and large numbers", "url": "https://support.microsoft.com/en-us/excel/keeping-leading-zeros-and-large-numbers"}, {"title": "Microsoft: Import or export text files", "url": "https://support.microsoft.com/en-us/excel/get-started/import-or-export-text-txt-or-csv-files"}, {"title": "Google: DATEVALUE", "url": "https://support.google.com/docs/answer/3093039?hl=en"}]
+sources: [{"title": "Microsoft: Keeping leading zeros and large numbers", "url": "https://support.microsoft.com/en-us/excel/keeping-leading-zeros-and-large-numbers"}, {"title": "Microsoft: Import or export text files", "url": "https://support.microsoft.com/en-us/excel/get-started/import-or-export-text-txt-or-csv-files"}, {"title": "Google: DATEVALUE", "url": "https://support.google.com/docs/answer/3093039?hl=en"}, {"title": "Google: Edit and format a spreadsheet", "url": "https://support.google.com/docs/answer/46973?hl=en"}]
 verification: "Official documentation reviewed 2026-10-24; sample input/output oracles checked with JavaScript assertions. Native Excel and Google Sheets execution not performed."
 notionPageId: "402db4c0-a991-810e-84ed-cff21c72036a"
 draft: false
@@ -53,7 +53,22 @@ A five-digit custom number format can make 123 look like 00123. It does not esta
 
 In a blank Sheets file, choose **File → Import → Upload**, select the CSV, and choose a new sheet as the destination. In import dialogs that offer **Convert text to numbers, dates, and formulas**, clear that option for this exercise. Check the displayed option in your current dialog; this article's exact UI sequence has not been tested in a live Sheets session.
 
-If that control is absent, do not assume conversion is disabled. For this small comma-free dataset, a reversible fallback is to preformat A:C as **Plain text**, paste tab-separated text from a plain-text editor, and verify the cells. For general CSV containing quoted commas or embedded line breaks, do not split it by hand; retain the source and use an import path that supports its CSV structure.
+If that control is absent, do not assume conversion is disabled. The downloaded CSV uses **commas**, so pasting its raw text is not the same as pasting a three-column table. For **this four-record example only**, use the ready-made tab-separated block below:
+
+1. Open a **blank** sheet. Select columns **A:C** and choose **Format → Number → Plain text** *before* pasting. Google describes cell-format selection in its [spreadsheet formatting guide](https://support.google.com/docs/answer/46973?hl=en).
+2. Copy all five lines inside the box, including the headings. The fields are separated by **real tab characters**, not commas or spaces.
+3. Single-click **A1** and paste once. Check that the headings occupy **A1:C1** and the four records occupy **A2:C5**. Do not double-click A1 to edit inside a single cell.
+4. Check that **A2** is `00123`, **A3** is `00007`, **A4** is the full 18-digit identifier, and **A5** is `001E5`. Then run the formulas in the next section. If everything went into one cell or the checks fail, undo and return to the untouched source; do not disguise changed values with a display format.
+
+```text
+account_id	event_date_raw	amount_raw
+00123	03/04/2026	19.50
+00007	2026-10-24	8.00
+123456789012345678	2026-10-25	12.75
+001E5	04/03/2026	6.25
+```
+
+This paste alternative is possible because **none of these example fields contains a tab or embedded line break**. It is not a general CSV parser. If your actual CSV contains quoted commas, tabs, quoted line breaks or other complex field contents, keep the original file and use a proper CSV import path rather than splitting it manually. Plain-text formatting before a paste is a safeguard to **check**, not proof that a live Google Sheets import was executed for this guide.
 
 Run the checks below regardless of the import route. If they fail, discard the practice sheet and return to the untouched file rather than fixing only what is visible.
 
