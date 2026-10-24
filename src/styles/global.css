@@ -6,3 +6,20 @@
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Evidence-led article illustrations, shown with plain-language captions. */
+.article-visual{margin:0 0 32px;max-width:1130px}
+.article-visual img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:13px;background:var(--wash)}
+.article-visual figcaption{padding:12px 4px 0;font-size:.86rem;line-height:1.65;color:#4d6570;max-width:92ch}
+.prose{line-height:1.75}
+.prose p,.prose li{color:#3f5562}
+.prose pre,.formula-card pre{overflow-x:auto;overflow-wrap:normal;white-space:pre;-webkit-overflow-scrolling:touch;font-size:.89rem}
+.prose pre code{white-space:pre;overflow-wrap:normal;font-size:inherit}
+.prose table{-webkit-overflow-scrolling:touch}
+@media(max-width:760px){
+  .article-visual{margin-bottom:22px}
+  .article-visual figcaption{font-size:.83rem}
+  .prose{font-size:1rem;line-height:1.75}
+  .prose h2{margin-block:30px 12px}
+  .prose pre{padding:24px 12px 14px}
+}
