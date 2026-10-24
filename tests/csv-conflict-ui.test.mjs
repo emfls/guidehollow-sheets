@@ -16,7 +16,7 @@ test('csv results explain conflicting selected-key values before export',()=>{
 test('download remains blocked until conflict and formula warnings are acknowledged',()=>{
   const script=read('src/scripts/csv-tool.ts');
   assert.match(script,/conflictingDuplicates\(data, found\.duplicates\)/);
-  assert.match(script,/differingColumns\.map\(column => headings\[column\]\)/);
+  assert.match(script,/changed\.map\(column => conflictHeadings\[column\]\)/);
   assert.match(script,/conflictCount > 0 && !conflictAck\.checked/);
   assert.match(script,/conflictAck\.addEventListener\('change', refreshDownload\)/);
   assert.match(script,/resetConflicts\(\)/);
