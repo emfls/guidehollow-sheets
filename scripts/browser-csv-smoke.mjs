@@ -121,7 +121,7 @@ async function run() {
     "return {disabled:button.disabled,resultsHidden:document.querySelector('#csv-results').hidden,",
     "  conflictHidden:document.querySelector('#csv-conflict-ack-row').hidden,",
     "  statusUnchanged:document.querySelector('#csv-status').textContent===before};"
-  ].join('\\n'));
+  ].join('\n'));
   assert.deepEqual(beforeRead,{disabled:true,resultsHidden:true,conflictHidden:true,statusUnchanged:true},
     'Both native and synthetic premature download clicks must be inert');
 
@@ -208,7 +208,7 @@ async function run() {
     "  optionsHidden:document.querySelector('#csv-options').hidden,",
     "  approvalHidden:document.querySelector('#csv-conflict-ack-row').hidden,",
     "  downloadDisabled:document.querySelector('#csv-download').disabled};"
-  ].join('\\n'));
+  ].join('\n'));
   assert.deepEqual(changedInput,
     {resultsHidden:true,optionsHidden:true,approvalHidden:true,downloadDisabled:true},
     'Editing source CSV must invalidate the prior results, approval and export');
