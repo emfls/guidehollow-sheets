@@ -197,6 +197,31 @@ async function run() {
   assert.equal(accepted.approved,true);
   assert.equal(accepted.downloadDisabled,false,'Both deliberate checkboxes should enable local CSV export');
 
+  // Measure mobile browser layout and control dimensions at two phone widths.
+  const mobileObservations = [];
+  for (const width of [360,390]) {
+    await page.send('Emulation.setDeviceMetricsOverride', {width,height:800,deviceScaleFactor:3,mobile:true});
+    await page.send('Emulation.setTouchEmulationEnabled', {enabled:true,maxTouchPoints:1});
+    const metrics = await page.evaluate([
+      "const table=document.querySelector('#csv-conflict-table');",
+      "const last=table.querySelector('tbody tr:first-child td:last-child');",
+      "const dims=id=>{const r=document.querySelector(id).getBoundingClientRect();return {w:Math.round(r.width),h:Math.round(r.height),left:Math.round(r.left),right:Math.round(r.right)};};",
+      "table.scrollLeft=table.scrollWidth;",
+      "const result={viewport:innerWidth,rootWidth:document.documentElement.scrollWidth,",
+      "bodyWidth:document.body.scrollWidth,tableClient:table.clientWidth,tableScroll:table.scrollWidth,",
+      "tableOffset:table.scrollLeft,lastColumnRight:Math.round(last.getBoundingClientRect().right),",
+      "tableRight:Math.round(table.getBoundingClientRect().right),",
+      "menu:dims('#menu-toggle'),read:dims('#csv-load'),check:dims('#csv-check'),",
+      "previous:dims('#csv-conflict-prev'),next:dims('#csv-conflict-next'),",
+      "download:dims('#csv-download'),report:dims('#csv-conflict-report'),",
+      "keyboardFocusTest:document.querySelector('#csv-conflict-prev').tabIndex>=0};",
+      "table.scrollLeft=0;return result;"
+    ].join('\n'));
+    mobileObservations.push(metrics);
+  }
+  await page.send('Emulation.clearDeviceMetricsOverride');
+  await page.send('Emulation.setTouchEmulationEnabled',{enabled:false});
+  console.log('CSV MOBILE DOM AUDIT ' + JSON.stringify({target,mobileObservations}));
   const invalidated = await page.evaluate([
     "const checks=[...document.querySelectorAll('#csv-columns input')];",
     "checks[1].checked=true; checks[1].dispatchEvent(new Event('change',{bubbles:true}));",
