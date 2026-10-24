@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 545" role="img" aria-labelledby="title desc">
+<title id="title">COUNTIF versus COUNTIFS: which rows meet one or two rules?</title>
+<desc id="desc">Five fictional records. Region East appears in three rows. Region East and status Paid occur together in only two rows. COUNTIF returns three while COUNTIFS returns two.</desc>
+<rect x="0" y="0" width="1200" height="545" rx="22" fill="#f3f8f4"/>
+<text x="42" y="58" font-family="Arial,sans-serif" font-size="30" fill="#173e3d" font-weight="700">COUNTIF checks one rule. COUNTIFS checks both.</text>
+<text x="42" y="93" font-family="Arial,sans-serif" font-size="18" fill="#45696a" font-weight="400">Same five records — different questions and different answers.</text>
+<rect x="42" y="119" width="600" height="358" rx="16" fill="#ffffff" stroke="#b6d2c4" stroke-width="2"/>
+<rect x="56" y="134" width="570" height="44" rx="6" fill="#d7eae0"/>
+<text x="90" y="163" font-family="Arial,sans-serif" font-size="18" fill="#235345" font-weight="700">Row</text>
+<text x="192" y="163" font-family="Arial,sans-serif" font-size="18" fill="#235345" font-weight="700">A · Region</text>
+<text x="370" y="163" font-family="Arial,sans-serif" font-size="18" fill="#235345" font-weight="700">B · Status</text>
+<text x="523" y="163" font-family="Arial,sans-serif" font-size="18" fill="#235345" font-weight="700">C · Value</text>
+<rect x="56" y="181" width="570" height="52" rx="6" fill="#e9f7ed"/>
+<text x="98" y="213" font-family="Arial,sans-serif" font-size="18" fill="#193f46" font-weight="400">2</text>
+<text x="193" y="213" font-family="Arial,sans-serif" font-size="18" fill="#176348" font-weight="700">East</text>
+<text x="370" y="213" font-family="Arial,sans-serif" font-size="18" fill="#176348" font-weight="700">Paid</text>
+<text x="530" y="213" font-family="Arial,sans-serif" font-size="18" fill="#193f46" font-weight="400">120</text>
+<rect x="56" y="237" width="570" height="52" rx="6" fill="#f7faf8"/>
+<text x="98" y="269" font-family="Arial,sans-serif" font-size="18" fill="#193f46" font-weight="400">3</text>
+<text x="193" y="269" font-family="Arial,sans-serif" font-size="18" fill="#4b5f62" font-weight="400">West</text>
+<text x="370" y="269" font-family="Arial,sans-serif" font-size="18" fill="#176348" font-weight="700">Paid</text>
+<text x="530" y="269" font-family="Arial,sans-serif" font-size="18" fill="#193f46" font-weight="400">90</text>
+<rect x="56" y="293" width="570" height="52" rx="6" fill="#f7faf8"/>
+<text x="98" y="325" font-family="Arial,sans-serif" font-size="18" fill="#193f46" font-weight="400">4</text>
+<text x="193" y="325" font-family="Arial,sans-serif" font-size="18" fill="#176348" font-weight="700">East</text>
+<text x="370" y="325" font-family="Arial,sans-serif" font-size="18" fill="#4b5f62" font-weight="400">Open</text>
+<text x="530" y="325" font-family="Arial,sans-serif" font-size="18" fill="#193f46" font-weight="400">200</text>
+<rect x="56" y="349" width="570" height="52" rx="6" fill="#e9f7ed"/>
+<text x="98" y="381" font-family="Arial,sans-serif" font-size="18" fill="#193f46" font-weight="400">5</text>
+<text x="193" y="381" font-family="Arial,sans-serif" font-size="18" fill="#176348" font-weight="700">East</text>
+<text x="370" y="381" font-family="Arial,sans-serif" font-size="18" fill="#176348" font-weight="700">Paid</text>
+<text x="530" y="381" font-family="Arial,sans-serif" font-size="18" fill="#193f46" font-weight="400">50</text>
+<rect x="56" y="405" width="570" height="52" rx="6" fill="#f7faf8"/>
+<text x="98" y="437" font-family="Arial,sans-serif" font-size="18" fill="#193f46" font-weight="400">6</text>
+<text x="193" y="437" font-family="Arial,sans-serif" font-size="18" fill="#4b5f62" font-weight="400">West</text>
+<text x="370" y="437" font-family="Arial,sans-serif" font-size="18" fill="#4b5f62" font-weight="400">Open</text>
+<text x="530" y="437" font-family="Arial,sans-serif" font-size="18" fill="#193f46" font-weight="400">75</text>
+<rect x="668" y="119" width="490" height="170" rx="16" fill="#ffffff" stroke="#abcab8" stroke-width="2"/>
+<text x="694" y="157" font-family="Arial,sans-serif" font-size="17" fill="#5c6d66" font-weight="700">One rule</text>
+<text x="694" y="192" font-family="Arial,sans-serif" font-size="21" fill="#153d38" font-weight="700">=COUNTIF(A2:A6,"East")</text>
+<text x="694" y="227" font-family="Arial,sans-serif" font-size="17" fill="#193f46" font-weight="400">East appears in rows 2, 4 and 5</text>
+<text x="694" y="270" font-family="Arial,sans-serif" font-size="26" fill="#15774d" font-weight="700">Result: 3 rows</text>
+<rect x="668" y="307" width="490" height="170" rx="16" fill="#ffffff" stroke="#abcab8" stroke-width="2"/>
+<text x="694" y="345" font-family="Arial,sans-serif" font-size="17" fill="#5c6d66" font-weight="700">Two rules in the SAME row</text>
+<text x="694" y="379" font-family="Arial,sans-serif" font-size="19" fill="#153d38" font-weight="700">=COUNTIFS(A2:A6,"East",</text>
+<text x="694" y="408" font-family="Arial,sans-serif" font-size="19" fill="#153d38" font-weight="700">           B2:B6,"Paid")</text>
+<text x="694" y="443" font-family="Arial,sans-serif" font-size="21" fill="#15774d" font-weight="700">Result: 2 rows (rows 2 and 5)</text>
+<text x="44" y="510" font-family="Arial,sans-serif" font-size="17" fill="#56736d" font-weight="400">Fictional teaching data. Expected results checked against row conditions; not an app screenshot.</text>
+</svg>
