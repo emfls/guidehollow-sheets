@@ -233,7 +233,7 @@ async function run() {
   // This fixture has 12 synthetic data rows and no real user data.
   await page.evaluate("document.querySelector('#csv-download').click();");
   const conflictingCSV=await exported('cleaned.csv');
-  assert.equal(conflictingCSV,'id,price\\r\\n001,1\\r\\n',
+  assert.equal(conflictingCSV,'id,price\r\n001,1\r\n',
     'Actual exported conflict CSV must retain only the first keyed record');
   await page.evaluate("document.querySelector('#csv-conflict-report').click();");
   const review=JSON.parse(await exported('csv-conflict-review.json'));
@@ -395,7 +395,7 @@ async function run() {
   assert.equal(await page.evaluate("return document.querySelector('#csv-download').disabled;"),true);
 
   await page.evaluate("document.querySelector('#csv-reset').click();");
-  const fullCSV='\\uFEFFid,name,note\\r\\n001,"Ada, Kim","=2+2"\\r\\n001,"Ada, Kim","=2+2"\\r\\n002,"Han ""Sky""","Line one\\nLine two"\\r\\n002,"Han ""Sky""","Line one\\nLine two"\\r\\n003,Ji,plain\\r\\n';
+  const fullCSV='\uFEFFid,name,note\r\n001,"Ada, Kim","=2+2"\r\n001,"Ada, Kim","=2+2"\r\n002,"Han ""Sky""","Line one\nLine two"\r\n002,"Han ""Sky""","Line one\nLine two"\r\n003,Ji,plain\r\n';
   await attachFile('sample-with-bom.csv',Buffer.from(fullCSV,'utf8'));
   await pollState('UTF-8 file loaded');
   const processed=await page.evaluate([
@@ -418,10 +418,10 @@ async function run() {
     "document.querySelector('#csv-download').click();"
   ].join('\n'));
   const cleanedCSV=await exported('cleaned.csv');
-  const expectedCSV='id,name,note\\r\\n001,"Ada, Kim",=2+2\\r\\n002,"Han ""Sky""","Line one\\nLine two"\\r\\n003,Ji,plain\\r\\n';
+  const expectedCSV='id,name,note\r\n001,"Ada, Kim",=2+2\r\n002,"Han ""Sky""","Line one\nLine two"\r\n003,Ji,plain\r\n';
   assert.equal(cleanedCSV,expectedCSV,
     'Actual UTF-8 CSV bytes must preserve the original text values and CRLF records');
-  assert.ok(!cleanedCSV.startsWith('\\uFEFF'),'Export must omit input BOM');
+  assert.ok(!cleanedCSV.startsWith('\uFEFF'),'Export must omit input BOM');
   const reset=await page.evaluate([
     "document.querySelector('#csv-reset').click();",
     "return {text:document.querySelector('#csv-input').value,",
