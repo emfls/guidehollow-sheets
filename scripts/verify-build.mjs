@@ -1,3 +1,4 @@
+import {verifyApprovedVisuals} from './verify-approved-visuals.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -35,3 +36,6 @@ const search=JSON.parse(await fs.readFile('dist/search-index.json','utf8'));asse
 const feed=await fs.readFile('dist/rss.xml','utf8');assert.equal(feed.match(/<item>/g)?.length,articles);assert(!feed.includes('https://guidehollow.com/'));
 const slugs=new Set();for(const file of await files('src/content/articles')){if(!file.endsWith('.md'))continue;const body=await fs.readFile(file,'utf8');const slug=body.match(/^slug: ["']?([^"'\n]+)["']?$/m)?.[1];assert(slug&&!slugs.has(slug),`Unique source slug ${file}`);slugs.add(slug);assert(body.includes('verification:'));assert(body.match(/^## /gm)?.length>=3,`Substantive sections ${file}`);}
 console.log(`Verified ${htmlFiles.length} HTML pages, ${articles} guides, ${references} internal links/assets, unique metadata, canonical/sitemap/robots/RSS/search, accessibility landmarks and zero ad trackers.`);
+
+const approvedVisualCount = await verifyApprovedVisuals();
+console.log('Verified ' + approvedVisualCount + ' approved Notion figure(s) against SVG bytes and generated HTML.');
