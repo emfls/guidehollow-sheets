@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCSV, stringifyCSV, findDuplicates, hasFormulaRisk, MAX_BYTES, MAX_ROWS, MAX_COLUMNS } from '../src/lib/csv.ts';
+import { parseCSV, stringifyCSV, findDuplicates, conflictingDuplicates, hasFormulaRisk, MAX_BYTES, MAX_ROWS, MAX_COLUMNS } from '../src/lib/csv.ts';
 
 test('BOM, CRLF, quoted comma, escaped quotes and multiline records preserve strings', () => {
   assert.deepEqual(parseCSV('\uFEFFid,note\r\n001,"a,b"\r\n002,"say ""hello""\r\nnext"\r\n'), [
@@ -56,4 +56,21 @@ test('selected keys remove differing non-key values; tuple encoding avoids colli
 test('formula-prefix warnings are conservative and never transform input', () => {
   for (const value of ['=SUM(A1)', '+1', '-1', '@SUM(A1)', '  =1', '\ttext', '\rtext', '\ntext']) assert.equal(hasFormulaRisk(value), true, value);
   for (const value of ['001', 'ordinary', 'a=b', "'=1", '']) assert.equal(hasFormulaRisk(value), false, value);
+});
+
+test('selected-key duplicates with different non-key values are flagged, exact duplicates are not', () => {
+  const rows = [
+    ['001', 'Ada', 'East'],
+    ['001', 'Ada', 'North'],
+    ['002', 'Lin', 'West'],
+    ['001', 'Ada', 'East'],
+  ];
+  const byId = findDuplicates(rows, [0]);
+  assert.equal(byId.removed, 2);
+  assert.deepEqual(conflictingDuplicates(rows, byId.duplicates), [
+    { index: 1, firstIndex: 0, differingColumns: [2] },
+  ]);
+  assert.deepEqual(conflictingDuplicates(rows, findDuplicates(rows).duplicates), []);
+  assert.deepEqual(conflictingDuplicates(rows, []), []);
+  assert.throws(() => conflictingDuplicates([], [{ index: 1, firstIndex: 0, row: ['001'] }]), /Missing retained row/);
 });

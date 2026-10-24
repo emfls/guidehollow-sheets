@@ -1,4 +1,4 @@
-import { parseCSV, stringifyCSV, findDuplicates, hasFormulaRisk, MAX_BYTES, MAX_ROWS, type CSVRow } from '../lib/csv';
+import { parseCSV, stringifyCSV, findDuplicates, conflictingDuplicates, hasFormulaRisk, MAX_BYTES, MAX_ROWS, type CSVRow } from '../lib/csv';
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = element<HTMLTextAreaElement>('csv-input');
@@ -9,11 +9,20 @@ const columns = element<HTMLFieldSetElement>('csv-columns');
 const error = element('csv-error'), status = element('csv-status');
 const results = element('csv-results'), options = element('csv-options');
 const ack = element<HTMLInputElement>('csv-ack'), download = element<HTMLButtonElement>('csv-download');
+const conflictWarning = element('csv-conflicts'), conflictTable = element('csv-conflict-table');
+const conflictAckRow = element('csv-conflict-ack-row');
+const conflictAck = element<HTMLInputElement>('csv-conflict-ack');
+let conflictCount = 0;
+const resetConflicts = () => {
+  conflictCount = 0; conflictWarning.hidden = true; conflictWarning.textContent = '';
+  conflictTable.hidden = true; conflictTable.replaceChildren();
+  conflictAckRow.hidden = true; conflictAck.checked = false;
+};
 let rows: CSVRow[] = [], cleaned: CSVRow[] = [];
 let revision = 0;
 const message = (text: string) => { error.textContent = text; error.hidden = !text; };
-const invalidate = () => { revision++; rows = []; cleaned = []; results.hidden = true; options.hidden = true; download.disabled = true; status.textContent = ''; message(''); };
-const invalidateResult = () => { cleaned = []; results.hidden = true; download.disabled = true; status.textContent = 'Matching options changed. Find duplicates again.'; };
+const invalidate = () => { revision++; rows = []; cleaned = []; results.hidden = true; options.hidden = true; download.disabled = true; ack.checked = false; resetConflicts(); status.textContent = ''; message(''); };
+const invalidateResult = () => { cleaned = []; results.hidden = true; download.disabled = true; ack.checked = false; resetConflicts(); status.textContent = 'Matching options changed. Find duplicates again.'; };
 function preview(id: string, data: CSVRow[], headings: string[]) {
   const target = element(id); target.replaceChildren();
   if (!data.length) { target.textContent = 'No rows.'; return; }
@@ -62,6 +71,17 @@ element('csv-check').addEventListener('click', () => {
     cleaned = header.checked ? [rows[0], ...found.kept] : found.kept;
     const headings = rows[0].map((value, i) => header.checked ? `${i + 1}: ${value || '(blank header)'}` : `Column ${i + 1}`);
     element('csv-counts').textContent = `Before: ${found.before} data rows. Removed: ${found.removed} duplicate rows. After: ${found.after} data rows.${header.checked ? ' Header excluded from these counts.' : ''}`;
+    const conflicts = conflictingDuplicates(data, found.duplicates);
+    conflictCount = conflicts.length;
+    if (conflictCount) {
+      conflictWarning.textContent = `Warning: ${conflictCount} row(s) share your selected matching keys but contain different values in other columns. Downloading will remove these rows and may discard meaningful updates. Compare the original records below before proceeding.`;
+      conflictWarning.hidden = false; conflictTable.hidden = false; conflictAckRow.hidden = false;
+      preview('csv-conflict-table', conflicts.map(item => [
+        String(item.firstIndex + offset + 1),
+        String(item.index + offset + 1),
+        item.differingColumns.map(column => headings[column]).join(', '),
+      ]), ['Kept record', 'Removed record', 'Different columns']);
+    } else resetConflicts();
     preview('csv-before', data, headings);
     preview('csv-duplicates', found.duplicates.map(item => [String(item.index + offset + 1), String(item.firstIndex + offset + 1), ...item.row]), ['Removed record', 'Kept record', ...headings]);
     preview('csv-after', found.kept, headings);
@@ -71,9 +91,13 @@ element('csv-check').addEventListener('click', () => {
     status.textContent = `Check complete: ${found.removed} duplicates found. Review the previews.`;
   } catch (e) { invalidateResult(); message((e as Error).message); }
 });
-ack.addEventListener('change', () => { download.disabled = !ack.checked || !cleaned.length; });
+const refreshDownload = () => {
+  download.disabled = !ack.checked || !cleaned.length || (conflictCount > 0 && !conflictAck.checked);
+};
+ack.addEventListener('change', refreshDownload);
+conflictAck.addEventListener('change', refreshDownload);
 download.addEventListener('click', () => {
-  if (!ack.checked || !cleaned.length) return;
+  if (!ack.checked || !cleaned.length || (conflictCount > 0 && !conflictAck.checked)) return;
   const url = URL.createObjectURL(new Blob([stringifyCSV(cleaned)], { type: 'text/csv;charset=utf-8' }));
   const link = document.createElement('a'); link.href = url; link.download = 'cleaned.csv'; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);

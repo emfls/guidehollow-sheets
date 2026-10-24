@@ -24,6 +24,9 @@ import Base from '../../layouts/Base.astro';
     <p id="csv-status" class="status" aria-live="polite"></p>
     <section id="csv-results" class="panel" hidden aria-labelledby="results-heading">
       <h2 id="results-heading">3. Review and download</h2><p id="csv-counts"></p>
+      <div id="csv-conflicts" class="notice" role="alert" hidden></div>
+      <div id="csv-conflict-table" class="table-scroll" hidden></div>
+      <p id="csv-conflict-ack-row" hidden><label><input id="csv-conflict-ack" type="checkbox" /> I reviewed the different column values in my original file and accept removing these matching-key rows.</label></p>
       <h3>Input preview</h3><div id="csv-before" class="table-scroll"></div>
       <h3>Rows to remove</h3><p>Record numbers count CSV records, including a header when present; quoted line breaks do not add records.</p><div id="csv-duplicates" class="table-scroll"></div>
       <h3>Cleaned preview</h3><div id="csv-after" class="table-scroll"></div>
