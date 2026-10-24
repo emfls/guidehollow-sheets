@@ -83,6 +83,32 @@ test('compatibility fixture: matching/empty sets, array values and lookups', () 
   assert.equal(rows.find(row => row[0] === 'Tape')?.[2] ?? 'Missing', 'Missing');
 });
 
+
+test('COUNTIF/COUNTIFS practice CSV matches the approved five-row visual and every worked total', () => {
+  const source = readFileSync(new URL('public/examples/countif-countifs-five-orders.csv',root),'utf8');
+  assert.equal(source.split('\n')[0], 'Region,Status,Value');
+  const rows = source.trimEnd().split('\n').slice(1).map(line => line.split(','));
+  assert.deepEqual(rows, [
+    ['East','Paid','120'],
+    ['West','Paid','90'],
+    ['East','Open','200'],
+    ['East','Paid','50'],
+    ['West','Open','75'],
+  ]);
+  const count = predicate => rows.filter(predicate).length;
+  assert.equal(count(row => row[0] === 'East'),3);
+  assert.equal(count(row => row[1] === 'Paid'),3);
+  assert.equal(count(row => row[0] === 'East' && row[1] === 'Paid'),2);
+  assert.equal(count(row => row[0] === 'East' && row[1] === 'Paid' && Number(row[2])>=100),1);
+  assert.equal(count(row => row[0] === 'East' || row[0] === 'West'),5);
+  assert.equal(count(row => row[0] === 'East' && row[0] === 'West'),0);
+  const svg=readFileSync(new URL('public/visuals/countif-vs-countifs-row-matches.svg',root),'utf8');
+  assert.match(svg,/East appears in three rows/);
+  assert.match(svg,/Region East and status Paid occur together in only two rows/);
+  assert.match(svg,/Result: 3 rows/);
+  assert.match(svg,/Result: 2 rows/);
+});
+
 test('launch guides and new Notion publications carry appropriate evidence', () => {
   const directory = new URL('src/content/articles/', root);
   const names = readdirSync(directory).filter(name => name.endsWith('.md'));
