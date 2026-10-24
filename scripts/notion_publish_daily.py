@@ -209,7 +209,11 @@ def approved_image_block(block):
             attribute = name.split('}')[-1].lower()
             if attribute.startswith('on') or attribute == 'href' or attribute == 'style':
                 raise ValueError('VISUAL_REVIEW_REQUIRED: SVG event handlers, hrefs and styles are not permitted')
-    lines = plain(item.get('caption', [])).replace('\r\n', '\n').strip().split('\n')
+    caption_text = plain(item.get('caption', [])).replace('\r\n', '\n')
+    # Notion's enhanced Markdown editor may encode caption line breaks as <br />.
+    # Normalize only literal break tags, never arbitrary HTML; all fields are escaped below.
+    caption_text = re.sub(r'<br\s*/?>', '\n', caption_text, flags=re.I)
+    lines = caption_text.strip().split('\n')
     if len(lines) != 3:
         raise ValueError('VISUAL_REVIEW_REQUIRED: image caption needs Alt:, Caption:, Credit: on separate lines')
     fields = {}
