@@ -12,10 +12,21 @@ const ack = element<HTMLInputElement>('csv-ack'), download = element<HTMLButtonE
 const conflictWarning = element('csv-conflicts'), conflictTable = element('csv-conflict-table');
 const conflictAckRow = element('csv-conflict-ack-row');
 const conflictAck = element<HTMLInputElement>('csv-conflict-ack');
-let conflictCount = 0;
+const conflictPageNote = element('csv-conflict-page');
+const conflictPager = element('csv-conflict-pages');
+const conflictPrevious = element<HTMLButtonElement>('csv-conflict-prev');
+const conflictNext = element<HTMLButtonElement>('csv-conflict-next');
+type Conflict = {index: number; firstIndex: number; differingColumns: number[]};
+let conflictCount = 0, conflictPage = 0, conflictOffset = 0;
+let conflictItems: Conflict[] = [], conflictSource: CSVRow[] = [], conflictHeadings: string[] = [];
+const CONFLICT_PAGE_SIZE = 10;
 const resetConflicts = () => {
-  conflictCount = 0; conflictWarning.hidden = true; conflictWarning.textContent = '';
+  conflictCount = 0; conflictPage = 0; conflictOffset = 0;
+  conflictItems = []; conflictSource = []; conflictHeadings = [];
+  conflictWarning.hidden = true; conflictWarning.textContent = '';
   conflictTable.hidden = true; conflictTable.replaceChildren();
+  conflictPageNote.hidden = true; conflictPageNote.textContent = '';
+  conflictPager.hidden = true; conflictPrevious.disabled = true; conflictNext.disabled = true;
   conflictAckRow.hidden = true; conflictAck.checked = false;
 };
 let rows: CSVRow[] = [], cleaned: CSVRow[] = [];
@@ -23,17 +34,47 @@ let revision = 0;
 const message = (text: string) => { error.textContent = text; error.hidden = !text; };
 const invalidate = () => { revision++; rows = []; cleaned = []; results.hidden = true; options.hidden = true; download.disabled = true; ack.checked = false; resetConflicts(); status.textContent = ''; message(''); };
 const invalidateResult = () => { cleaned = []; results.hidden = true; download.disabled = true; ack.checked = false; resetConflicts(); status.textContent = 'Matching options changed. Find duplicates again.'; };
-function preview(id: string, data: CSVRow[], headings: string[]) {
+function preview(id: string, data: CSVRow[], headings: string[], fullCaption?: string) {
   const target = element(id); target.replaceChildren();
   if (!data.length) { target.textContent = 'No rows.'; return; }
   const table = document.createElement('table');
-  const caption = table.createCaption(); caption.textContent = `Showing ${Math.min(data.length, 10)} of ${data.length} rows`;
+  const caption = table.createCaption(); caption.textContent = fullCaption ?? `Showing ${Math.min(data.length, 10)} of ${data.length} rows`;
   const tr = table.createTHead().insertRow();
   headings.forEach(label => { const th = document.createElement('th'); th.scope = 'col'; th.textContent = label; tr.append(th); });
   const body = table.createTBody();
   data.slice(0, 10).forEach(row => { const line = body.insertRow(); row.forEach(value => { line.insertCell().textContent = value; }); });
   target.append(table);
 }
+const renderConflictPage = () => {
+  if (!conflictItems.length) return;
+  const start = conflictPage * CONFLICT_PAGE_SIZE;
+  const pageItems = conflictItems.slice(start, start + CONFLICT_PAGE_SIZE);
+  // Build only the visible page: never render thousands of sensitive records into the DOM.
+  const pageRows = pageItems.map(item => {
+    const changed = item.differingColumns;
+    return [
+      String(item.firstIndex + conflictOffset + 1),
+      String(item.index + conflictOffset + 1),
+      changed.map(column => conflictHeadings[column]).join(' | '),
+      changed.map(column => JSON.stringify(conflictSource[item.firstIndex][column])).join(' | '),
+      changed.map(column => JSON.stringify(conflictSource[item.index][column])).join(' | '),
+    ];
+  });
+  const totalPages = Math.ceil(conflictItems.length / CONFLICT_PAGE_SIZE);
+  const messageText = `Conflicting rows ${start + 1}–${start + pageItems.length} of ${conflictItems.length}; page ${conflictPage + 1} of ${totalPages}.`;
+  preview('csv-conflict-table', pageRows,
+    ['Kept record', 'Removed record', 'Different columns', 'Kept values (same column order)', 'Removed values (same column order)'],
+    messageText);
+  conflictPageNote.textContent = messageText;
+  conflictPageNote.hidden = false;
+  conflictPager.hidden = false;
+  conflictPrevious.disabled = conflictPage === 0;
+  conflictNext.disabled = conflictPage + 1 >= totalPages;
+};
+conflictPrevious.addEventListener('click', () => { if (conflictPage > 0) { conflictPage--; renderConflictPage(); } });
+conflictNext.addEventListener('click', () => {
+  if ((conflictPage + 1) * CONFLICT_PAGE_SIZE < conflictItems.length) { conflictPage++; renderConflictPage(); }
+});
 input.addEventListener('input', () => { file.value = ''; invalidate(); });
 header.addEventListener('change', invalidate);
 file.addEventListener('change', async () => {
@@ -74,13 +115,14 @@ element('csv-check').addEventListener('click', () => {
     const conflicts = conflictingDuplicates(data, found.duplicates);
     conflictCount = conflicts.length;
     if (conflictCount) {
-      conflictWarning.textContent = `Warning: ${conflictCount} row(s) share your selected matching keys but contain different values in other columns. Downloading will remove these rows and may discard meaningful updates. Compare the original records below before proceeding.`;
+      conflictWarning.textContent = `Warning: ${conflictCount} row(s) share your selected matching keys but contain different values in other columns. Downloading will remove these rows and may discard meaningful updates. Compare the kept and removed values below before proceeding.`;
       conflictWarning.hidden = false; conflictTable.hidden = false; conflictAckRow.hidden = false;
-      preview('csv-conflict-table', conflicts.map(item => [
-        String(item.firstIndex + offset + 1),
-        String(item.index + offset + 1),
-        item.differingColumns.map(column => headings[column]).join(', '),
-      ]), ['Kept record', 'Removed record', 'Different columns']);
+      conflictItems = conflicts;
+      conflictSource = data;
+      conflictHeadings = headings;
+      conflictOffset = offset;
+      conflictPage = 0;
+      renderConflictPage();
     } else resetConflicts();
     preview('csv-before', data, headings);
     preview('csv-duplicates', found.duplicates.map(item => [String(item.index + offset + 1), String(item.firstIndex + offset + 1), ...item.row]), ['Removed record', 'Kept record', ...headings]);

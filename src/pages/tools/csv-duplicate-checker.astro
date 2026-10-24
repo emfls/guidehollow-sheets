@@ -25,12 +25,17 @@ import Base from '../../layouts/Base.astro';
     <section id="csv-results" class="panel" hidden aria-labelledby="results-heading">
       <h2 id="results-heading">3. Review and download</h2><p id="csv-counts"></p>
       <div id="csv-conflicts" class="notice" role="alert" hidden></div>
+      <p id="csv-conflict-page" class="small" aria-live="polite" hidden></p>
       <div id="csv-conflict-table" class="table-scroll" hidden></div>
-      <p id="csv-conflict-ack-row" hidden><label><input id="csv-conflict-ack" type="checkbox" /> I reviewed the different column values in my original file and accept removing these matching-key rows.</label></p>
+      <div id="csv-conflict-pages" class="csv-conflict-pages" role="group" aria-label="Review all conflicting rows" hidden>
+        <button id="csv-conflict-prev" type="button" class="button secondary" disabled>Previous differences</button>
+        <button id="csv-conflict-next" type="button" class="button secondary" disabled>Next differences</button>
+      </div>
+      <p id="csv-conflict-ack-row" hidden><label><input id="csv-conflict-ack" type="checkbox" /> I have compared the changed values below with the original CSV and accept removing the matching-key rows.</label></p>
       <h3>Input preview</h3><div id="csv-before" class="table-scroll"></div>
       <h3>Rows to remove</h3><p>Record numbers count CSV records, including a header when present; quoted line breaks do not add records.</p><div id="csv-duplicates" class="table-scroll"></div>
       <h3>Cleaned preview</h3><div id="csv-after" class="table-scroll"></div>
-      <p>Each preview shows up to 10 rows. The download includes all kept rows in their original order.</p>
+      <p>Input, removal, and cleaned previews show up to 10 rows. Use Previous differences and Next differences to inspect every conflicting row and its actual values before you agree to remove them. The download includes all kept rows in their original order.</p>
       <div class="notice"><strong>Spreadsheet safety:</strong> cells starting with =, +, -, @ or certain whitespace can be interpreted as formulas when opened in spreadsheet apps. Quoting CSV fields does not prevent this. Source values are never modified here. Import untrusted files as text, and review formulas before opening.</div>
       <p id="csv-risk"></p><p><label><input id="csv-ack" type="checkbox" /> I understand the spreadsheet formula risk and want the unchanged values.</label></p>
       <button id="csv-download" class="button" type="button" disabled>Download cleaned CSV</button>
