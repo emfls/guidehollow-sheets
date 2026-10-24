@@ -1,6 +1,6 @@
 /**
- * Deterministic real-Chromium smoke test of the BUILT CSV tool.
- * No NPM/browser automation dependencies, external sites, network uploads or downloads.
+ * Deterministic real-Chromium CSV smoke test of the built AND deployed site.
+ * No NPM/browser automation dependencies or CSV upload/export operations.
  * Uses Chrome DevTools Protocol to inspect true DOM properties and click behavior.
  */
 import assert from 'node:assert/strict';
@@ -12,6 +12,8 @@ import path from 'node:path';
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const outputRoot = path.resolve('dist');
+const target = process.env.CSV_BROWSER_TARGET ?? 'built';
+assert.ok(['built','production'].includes(target), 'CSV_BROWSER_TARGET must be built or production');
 let server;
 let chrome;
 let socket;
@@ -100,16 +102,21 @@ async function startChrome() {
 }
 
 async function run() {
-  const base = await startStaticServer();
+  // 'built' uses local dist files. 'production' navigates to the public Pages URL,
+  // after deployment, to independently observe actual live DOM and event behavior.
+  const base = target === 'production'
+    ? 'https://sheets.guidehollow.com'
+    : await startStaticServer();
   const page = await startChrome();
   await page.send('Page.navigate', {url:base + '/tools/csv-duplicate-checker/'});
   let ready = false;
-  for(let i=0;i<100;i++) {
+  for(let i=0;i<200;i++) {
     ready = await page.evaluate("return document.readyState === 'complete' && !!document.querySelector('#csv-load');");
     if (ready) break;
     await delay(100);
   }
-  assert(ready, 'CSV tool did not load');
+  assert(ready, `CSV tool did not load from ${base}`);
+  assert.equal(await page.evaluate('return location.origin;'),base, 'Navigated to wrong browser origin');
 
   // Real DOM assertions before any CSV is read, including a forged click event
   // that deliberately bypasses normal disabled-button browser dispatch.
@@ -213,15 +220,23 @@ async function run() {
     {resultsHidden:true,optionsHidden:true,approvalHidden:true,downloadDisabled:true},
     'Editing source CSV must invalidate the prior results, approval and export');
 
-  // The exercise should only fetch built assets from its own local server.
-  // This is a scoped network observation, not a general privacy/security audit.
-  const httpRequests = page.requests.filter(item => item.url.startsWith('http:') || item.url.startsWith('https:'));
-  assert.ok(httpRequests.length > 0,'Expected observable local HTTP requests');
-  assert.deepEqual(httpRequests.filter(item => !item.url.startsWith(base + '/')),[],
-    'CSV exercise must not send requests to external HTTP endpoints');
-  assert.deepEqual(httpRequests.filter(item => item.method !== 'GET'),[],
-    'CSV exercise must not send data using HTTP requests');
-  console.log('PASS: actual Chromium DOM confirms 11 differences, locked review, final row, dual consent and reset.');
+  // Local build can prove this isolated test makes only same-origin GET requests.
+  // The public site can load unrelated third-party scripts; avoid conflating their
+  // requests with a CSV upload or claiming this is a comprehensive privacy audit.
+  if (target === 'built') {
+    const httpRequests = page.requests.filter(item => item.url.startsWith('http:') || item.url.startsWith('https:'));
+    assert.ok(httpRequests.length > 0,'Expected observable local HTTP requests');
+    assert.deepEqual(httpRequests.filter(item => !item.url.startsWith(base + '/')),[],
+      'Built CSV exercise must not send requests to external HTTP endpoints');
+    assert.deepEqual(httpRequests.filter(item => item.method !== 'GET'),[],
+      'Built CSV exercise must not send data using HTTP requests');
+  }
+  console.log('CSV DOM OBSERVATIONS ' + JSON.stringify({
+    target, origin:base, beforeRead, firstPage:initial, prematureConsent:early,
+    secondPage:visited, bothConsents:accepted, keysChanged:invalidated,
+    sourceChanged:changedInput
+  }));
+  console.log('PASS: real Chromium DOM confirms 11 differences, locked review, final row, dual consent and reset on ' + target);
 }
 
 try {await run();}
