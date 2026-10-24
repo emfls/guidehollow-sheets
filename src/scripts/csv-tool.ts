@@ -1,4 +1,5 @@
 import { parseCSV, stringifyCSV, findDuplicates, conflictingDuplicates, hasFormulaRisk, MAX_BYTES, MAX_ROWS, type CSVRow } from '../lib/csv';
+import {conflictReviewReady} from '../lib/conflict-review';
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = element<HTMLTextAreaElement>('csv-input');
@@ -16,12 +17,21 @@ const conflictPageNote = element('csv-conflict-page');
 const conflictPager = element('csv-conflict-pages');
 const conflictPrevious = element<HTMLButtonElement>('csv-conflict-prev');
 const conflictNext = element<HTMLButtonElement>('csv-conflict-next');
+const conflictReviewProgress = element('csv-review-progress');
+const conflictReportRow = element('csv-conflict-report-row');
+const conflictReport = element<HTMLButtonElement>('csv-conflict-report');
+const visitedConflictPages = new Set<number>();
+let reportRequested = false;
 type Conflict = {index: number; firstIndex: number; differingColumns: number[]};
 let conflictCount = 0, conflictPage = 0, conflictOffset = 0;
 let conflictItems: Conflict[] = [], conflictSource: CSVRow[] = [], conflictHeadings: string[] = [];
 const CONFLICT_PAGE_SIZE = 10;
 const resetConflicts = () => {
   conflictCount = 0; conflictPage = 0; conflictOffset = 0;
+  visitedConflictPages.clear(); reportRequested = false;
+  conflictReviewProgress.hidden = true; conflictReviewProgress.textContent = '';
+  conflictReportRow.hidden = true;
+  conflictAck.disabled = true;
   conflictItems = []; conflictSource = []; conflictHeadings = [];
   conflictWarning.hidden = true; conflictWarning.textContent = '';
   conflictTable.hidden = true; conflictTable.replaceChildren();
@@ -45,6 +55,17 @@ function preview(id: string, data: CSVRow[], headings: string[], fullCaption?: s
   data.slice(0, 10).forEach(row => { const line = body.insertRow(); row.forEach(value => { line.insertCell().textContent = value; }); });
   target.append(table);
 }
+const updateReviewGate = () => {
+  const pageCount = Math.ceil(conflictCount / CONFLICT_PAGE_SIZE);
+  const ready = conflictReviewReady(conflictCount, CONFLICT_PAGE_SIZE, visitedConflictPages, reportRequested);
+  conflictAck.disabled = !ready;
+  if (!ready) conflictAck.checked = false;
+  conflictReviewProgress.textContent = ready
+    ? (reportRequested ? 'Complete differences report requested. Inspect the local JSON file before confirming removal.' : 'All conflict pages opened. Compare the values before confirming removal.')
+    : `Opened ${visitedConflictPages.size} of ${pageCount} conflict pages. Open every page, or download the complete local JSON report, before confirming removal.`;
+  conflictReviewProgress.hidden = false;
+  refreshDownload();
+};
 const renderConflictPage = () => {
   if (!conflictItems.length) return;
   const start = conflictPage * CONFLICT_PAGE_SIZE;
@@ -70,10 +91,36 @@ const renderConflictPage = () => {
   conflictPager.hidden = false;
   conflictPrevious.disabled = conflictPage === 0;
   conflictNext.disabled = conflictPage + 1 >= totalPages;
+  visitedConflictPages.add(conflictPage);
+  updateReviewGate();
 };
 conflictPrevious.addEventListener('click', () => { if (conflictPage > 0) { conflictPage--; renderConflictPage(); } });
 conflictNext.addEventListener('click', () => {
   if ((conflictPage + 1) * CONFLICT_PAGE_SIZE < conflictItems.length) { conflictPage++; renderConflictPage(); }
+});
+conflictReport.addEventListener('click', () => {
+  if (!conflictItems.length || !conflictCount) return;
+  const report = {
+    format: 'GuideHollow Sheets: complete CSV duplicate conflict review',
+    guidance: 'Compare these kept and removed values with the source before accepting removal. Values are copied literally, not modified or executed.',
+    totalConflicts: conflictCount,
+    differences: conflictItems.map(item => ({
+      keptRecord: item.firstIndex + conflictOffset + 1,
+      removedRecord: item.index + conflictOffset + 1,
+      changes: item.differingColumns.map(column => ({
+        column: column + 1,
+        name: conflictHeadings[column],
+        kept: conflictSource[item.firstIndex][column],
+        removed: conflictSource[item.index][column],
+      })),
+    })),
+  };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], {type: 'application/json;charset=utf-8'}));
+  const link = document.createElement('a'); link.href = url; link.download = 'csv-conflict-review.json'; link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  reportRequested = true;
+  updateReviewGate();
+  status.textContent = 'Complete differences report download started. Review it locally before confirming removal.';
 });
 input.addEventListener('input', () => { file.value = ''; invalidate(); });
 header.addEventListener('change', invalidate);
@@ -103,6 +150,7 @@ element('csv-load').addEventListener('click', () => {
 });
 mode.addEventListener('change', () => { columns.hidden = mode.value !== 'selected'; invalidateResult(); });
 element('csv-check').addEventListener('click', () => {
+  resetConflicts();
   message('');
   try {
     const keys = mode.value === 'selected' ? Array.from(columns.querySelectorAll<HTMLInputElement>('input:checked'), item => Number(item.value)) : undefined;
@@ -116,7 +164,7 @@ element('csv-check').addEventListener('click', () => {
     conflictCount = conflicts.length;
     if (conflictCount) {
       conflictWarning.textContent = `Warning: ${conflictCount} row(s) share your selected matching keys but contain different values in other columns. Downloading will remove these rows and may discard meaningful updates. Compare the kept and removed values below before proceeding.`;
-      conflictWarning.hidden = false; conflictTable.hidden = false; conflictAckRow.hidden = false;
+      conflictWarning.hidden = false; conflictTable.hidden = false; conflictAckRow.hidden = false; conflictReportRow.hidden = false;
       conflictItems = conflicts;
       conflictSource = data;
       conflictHeadings = headings;
@@ -133,13 +181,17 @@ element('csv-check').addEventListener('click', () => {
     status.textContent = `Check complete: ${found.removed} duplicates found. Review the previews.`;
   } catch (e) { invalidateResult(); message((e as Error).message); }
 });
-const refreshDownload = () => {
-  download.disabled = !ack.checked || !cleaned.length || (conflictCount > 0 && !conflictAck.checked);
-};
+function refreshDownload() {
+  download.disabled = !ack.checked || !cleaned.length
+    || (conflictCount > 0 && (!conflictAck.checked
+      || !conflictReviewReady(conflictCount, CONFLICT_PAGE_SIZE, visitedConflictPages, reportRequested)));
+}
 ack.addEventListener('change', refreshDownload);
 conflictAck.addEventListener('change', refreshDownload);
 download.addEventListener('click', () => {
-  if (!ack.checked || !cleaned.length || (conflictCount > 0 && !conflictAck.checked)) return;
+  if (!ack.checked || !cleaned.length
+      || (conflictCount > 0 && (!conflictAck.checked
+        || !conflictReviewReady(conflictCount, CONFLICT_PAGE_SIZE, visitedConflictPages, reportRequested)))) return;
   const url = URL.createObjectURL(new Blob([stringifyCSV(cleaned)], { type: 'text/csv;charset=utf-8' }));
   const link = document.createElement('a'); link.href = url; link.download = 'cleaned.csv'; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
