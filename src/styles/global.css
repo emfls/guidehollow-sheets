@@ -30,3 +30,16 @@
   .toc details:not([open]) { margin-bottom: .2rem; }
   .toc a { overflow-wrap: anywhere; }
 }
+
+/* Formula Finder quick-start task shortcuts: readable and easy to tap. */
+.formula-quick-start{background:var(--wash)}
+.formula-quick-start h2{font-size:1.3rem;margin:0 0 8px}
+.formula-quick-start p{font-size:.94rem;max-width:74ch}
+.formula-task-shortcuts{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
+.formula-task-shortcuts .button{min-height:44px;white-space:normal;text-align:left}
+.formula-card h2:focus{outline:3px solid var(--teal);outline-offset:5px}
+#formula-empty button{border:1px solid var(--teal);border-radius:5px;color:var(--teal);padding:6px 10px;background:#fff}
+@media(max-width:550px){
+ .formula-task-shortcuts{display:grid;grid-template-columns:1fr 1fr}
+ .formula-task-shortcuts .button{font-size:.83rem;padding:11px}
+}

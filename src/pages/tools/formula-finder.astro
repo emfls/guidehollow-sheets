@@ -2,11 +2,28 @@
 import Base from '../../layouts/Base.astro';
 import { formulas } from '../../lib/formulas';
 const tasks = [...new Set(formulas.map(item => item.task))];
+const guideByName: Record<string,{href:string;label:string}> = {
+  SUMIFS: {href:'/formulas/sumifs-with-dates/',label:'Follow a worked SUMIFS example'},
+  XLOOKUP: {href:'/troubleshooting/xlookup-not-working/',label:'Diagnose a failed XLOOKUP'},
+  FILTER: {href:'/formulas/google-sheets-filter-examples/',label:'Try FILTER step by step'},
+  IFERROR: {href:'/formulas/iferror-vs-ifna-excel-google-sheets/',label:'Understand IFERROR versus IFNA'},
+};
 ---
 <Base title="Excel & Google Sheets Formula Finder" description="Find curated Excel and Google Sheets formulas by task, with sample inputs, expected results, product differences and official documentation." breadcrumbs={[{name:'Tools',url:'/tools/'},{name:'Formula Finder',url:'/tools/formula-finder/'}]}>
   <div>
     <header class="page-heading"><p class="eyebrow">Find a starting point</p><h1>Formula Finder</h1><p>Eight everyday functions. Choose your spreadsheet app, find your task, and adapt a clear example.</p></header>
     <p class="notice">This is a curated reference, not a calculator. Examples and expected results are static. No formulas run in Excel or Google Sheets here. English function names and comma separators are shown; your locale may require different names or semicolons.</p>
+    <section class="panel formula-quick-start" aria-labelledby="formula-start-title">
+      <h2 id="formula-start-title">What would you like to do?</h2>
+      <p>Pick a common job to jump straight to relevant examples. You can still search by function name or change apps below.</p>
+      <div class="formula-task-shortcuts" role="group" aria-label="Common spreadsheet jobs">
+        <button type="button" class="button secondary" data-quick-task="Look up data">Find a matching value</button>
+        <button type="button" class="button secondary" data-quick-task="Sum and count">Add or count matching rows</button>
+        <button type="button" class="button secondary" data-quick-task="Filter and deduplicate">Show matching rows</button>
+        <button type="button" class="button secondary" data-quick-task="Clean text">Clean messy text</button>
+      </div>
+      <p class="small">Choose an example, copy the formula, then replace its sample cell ranges with your own. Test it on a copy of your spreadsheet first.</p>
+    </section>
     <form id="formula-filters" class="panel" role="search">
       <div class="tool-grid">
         <div class="field"><label for="formula-query">Function name or task keyword</label><input id="formula-query" type="search" placeholder="Try XLOOKUP, spaces, or rows" /></div>
@@ -16,16 +33,17 @@ const tasks = [...new Set(formulas.map(item => item.task))];
       <button type="reset" class="button secondary">Reset filters</button>
     </form>
     <p id="formula-status" class="status" aria-live="polite">8 formulas. Showing Excel examples.</p>
-    <p id="formula-empty" class="notice" hidden>No formulas match. Try a function name or reset the filters.</p>
+    <p id="formula-empty" class="notice" hidden>No formulas match those filters. <button id="formula-clear" type="button">Clear filters</button> to see every example again.</p>
     <div id="formula-cards" class="tool-grid">
       {formulas.map(item => <article class="panel formula-card" data-name={item.name} data-task={item.task}>
-        <span class="chip">{item.task}</span><h2>{item.name}</h2><p>{item.purpose}</p>
+        <span class="chip">{item.task}</span><h2 tabindex="-1">{item.name}</h2><p>{item.purpose}</p>
         <div data-product="Excel"><h3>Excel syntax</h3><pre><code>{item.excelSyntax}</code></pre><h3>Example to copy</h3><pre><code>{item.excelExample}</code></pre></div>
         <div data-product="Google Sheets" hidden><h3>Google Sheets syntax</h3><pre><code>{item.sheetsSyntax}</code></pre><h3>Example to copy</h3><pre><code>{item.sheetsExample}</code></pre></div>
         <button class="button secondary formula-copy" type="button" data-excel={item.excelExample} data-sheets={item.sheetsExample} aria-label={`Copy ${item.name} example`}>Copy example</button>
         <h3>Sample inputs</h3><p>{item.inputs}</p><h3>Expected output</h3><p>{item.output}</p>
         <h3>Limits and compatibility</h3><p>{item.limits}</p>
         <p>Official documentation: <a href={item.excelSource}>Microsoft {item.name}</a> · <a href={item.sheetsSource}>Google Sheets {item.name}</a></p>
+        {guideByName[item.name] && <p><a href={guideByName[item.name].href}>{guideByName[item.name].label} →</a></p>}
       </article>)}
     </div>
     <section class="prose"><h2>Before you use an example</h2><p>Replace sample ranges with your own cells, keep matching ranges aligned, and test on a small copy of your data. Text such as P02 is an identifier, while the amount examples use actual numeric cells. A correct formula can still produce the wrong answer if your source data has hidden spaces, text-formatted numbers or unexpected blanks.</p><h2>How these examples are checked</h2><p>Syntax and compatibility notes were reviewed against the linked official documentation on October 24, 2026. Automated JavaScript checks cover the simple arithmetic, filtering and text results in these sample fixtures; they do not emulate a spreadsheet engine or verify behavior in a live workbook. Verify results in your target app and version.</p></section>
