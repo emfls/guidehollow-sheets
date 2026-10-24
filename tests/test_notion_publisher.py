@@ -219,10 +219,13 @@ class PublisherTests(unittest.TestCase):
             self.stage()
 
     def test_unsupported_blocks_do_not_silently_disappear(self):
-        for kind in ('image', 'callout', 'child_page', 'embed'):
+        for kind in ('callout', 'child_page', 'embed'):
             with patch.object(p, 'children', return_value=[{'type': kind, kind: {}}]):
                 with self.assertRaisesRegex(ValueError, 'Unsupported block'):
                     p.markdown(PAGE)
+        with patch.object(p, 'children', return_value=[{'type': 'image', 'image': {}}]):
+            with self.assertRaisesRegex(ValueError, 'VISUAL_REVIEW_REQUIRED'):
+                p.markdown(PAGE)
         with patch.object(p, 'children', return_value=[dict(paragraph('Text'), has_children=True)]):
             with self.assertRaisesRegex(ValueError, 'Unsupported nested'):
                 p.markdown(PAGE)
