@@ -219,10 +219,13 @@ class PublisherTests(unittest.TestCase):
             self.stage()
 
     def test_unsupported_blocks_do_not_silently_disappear(self):
-        for kind in ('image', 'callout', 'child_page', 'embed'):
+        for kind in ('callout', 'child_page', 'embed'):
             with patch.object(p, 'children', return_value=[{'type': kind, kind: {}}]):
                 with self.assertRaisesRegex(ValueError, 'Unsupported block'):
                     p.markdown(PAGE)
+        with patch.object(p, 'children', return_value=[{'type': 'image', 'image': {}}]):
+            with self.assertRaisesRegex(ValueError, 'VISUAL_REVIEW_REQUIRED'):
+                p.markdown(PAGE)
         with patch.object(p, 'children', return_value=[dict(paragraph('Text'), has_children=True)]):
             with self.assertRaisesRegex(ValueError, 'Unsupported nested'):
                 p.markdown(PAGE)
@@ -494,6 +497,89 @@ class PublisherTests(unittest.TestCase):
         self.assertIn('branches/main', workflow)
         self.assertIn('NOTION_API_TOKEN: ${{ secrets.NOTION_API_TOKEN }}', workflow)
         self.assertIn('Explicit Pages dispatch', workflow)
+
+
+
+    def test_approved_notions_images_render_accessibly_and_pin_asset_hash(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as temp:
+            with patch.object(p, 'ROOT', Path(temp)):
+                assets = Path(temp) / 'public/visuals'
+                assets.mkdir(parents=True)
+                asset = assets / 'example-flow.svg'
+                asset.write_text('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 460"><title>Example</title><rect width="1200" height="460" fill="#eeeeee"/></svg>')
+                figure = {
+                    'type': 'image', 'has_children': False,
+                    'image': {'type': 'external', 'external': {'url': p.SITE + '/visuals/example-flow.svg'},
+                              'caption': [{'plain_text': 'Alt: A flowchart comparing the input notes with the resulting reviewed checklist.\n'
+                                                         'Caption: Compare the fictional input notes with the output, then verify every factual claim.\n'
+                                                         'Credit: Original editorial diagram, fictional sample data.'}]},
+                }
+                with patch.object(p, 'children', return_value=[figure]):
+                    first = p.markdown('test-image')
+                    self.assertIn('<figure class="article-visual"', first)
+                    self.assertIn('alt="A flowchart comparing', first)
+                    self.assertIn('width="1200" height="460"', first)
+                    self.assertIn('loading="lazy"', first)
+                    self.assertIn('data-asset-sha256=', first)
+                    self.assertIn('Original editorial diagram', first)
+                    asset.write_text(asset.read_text().replace('#eeeeee', '#dddddd'))
+                    second = p.markdown('test-image')
+                    self.assertNotEqual(first, second, 'Asset changes must change the generated source digest')
+
+    def test_image_block_fails_closed_for_missing_credit_remote_or_unsafe_files(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as temp:
+            with patch.object(p, 'ROOT', Path(temp)):
+                assets = Path(temp) / 'public/visuals'
+                assets.mkdir(parents=True)
+                asset = assets / 'sample-visual.svg'
+                clean = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 460"><rect width="1200" height="460"/></svg>'
+                asset.write_text(clean)
+                data = {
+                    'type': 'image', 'has_children': False,
+                    'image': {'type': 'external', 'external': {'url': p.SITE + '/visuals/sample-visual.svg'},
+                              'caption': [{'plain_text': 'Alt: A safe diagram of a lookup example using fictional spreadsheet data.\n'
+                                                         'Caption: This diagram shows a visual explanation of the expected spreadsheet result.\n'
+                                                         'Credit: Original educational SVG diagram.'}]},
+                }
+                from copy import deepcopy
+                cases = []
+                wrong_origin = deepcopy(data)
+                wrong_origin['image']['external']['url'] = 'https://untrusted.example/visuals/sample-visual.svg'
+                cases.append(wrong_origin)
+                wrong_path = deepcopy(data)
+                wrong_path['image']['external']['url'] = p.SITE + '/visuals/../sample-visual.svg'
+                cases.append(wrong_path)
+                query_url = deepcopy(data)
+                query_url['image']['external']['url'] += '?token=secret'
+                cases.append(query_url)
+                expiring_upload = deepcopy(data)
+                expiring_upload['image'] = {'type': 'file', 'file': {'url': 'https://s3.example/temporary.svg'}}
+                cases.append(expiring_upload)
+                no_caption = deepcopy(data)
+                no_caption['image']['caption'] = []
+                cases.append(no_caption)
+                wrong_caption = deepcopy(data)
+                wrong_caption['image']['caption'][0]['plain_text'] = 'Alt: Some text'
+                cases.append(wrong_caption)
+                for case in cases:
+                    with self.subTest(case=case), self.assertRaisesRegex(ValueError, 'VISUAL_REVIEW_REQUIRED'):
+                        p.approved_image_block(case)
+                asset.unlink()
+                with self.assertRaisesRegex(ValueError, 'VISUAL_REVIEW_REQUIRED'):
+                    p.approved_image_block(data)
+                asset.write_text(clean.replace('<rect ', '<script>alert(1)</script><rect '))
+                with self.assertRaisesRegex(ValueError, 'VISUAL_REVIEW_REQUIRED'):
+                    p.approved_image_block(data)
+                asset.write_text(clean.replace('<rect ', '<rect onload="alert(1)" '))
+                with self.assertRaisesRegex(ValueError, 'VISUAL_REVIEW_REQUIRED'):
+                    p.approved_image_block(data)
+                asset.write_text(clean.replace('<rect ', '<rect style="fill:red" '))
+                with self.assertRaisesRegex(ValueError, 'VISUAL_REVIEW_REQUIRED'):
+                    p.approved_image_block(data)
 
 
 if __name__ == '__main__':

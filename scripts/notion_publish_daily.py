@@ -3,6 +3,7 @@
 import argparse
 from datetime import datetime, timezone
 from html import escape, unescape
+from html import escape as html_escape
 from html.parser import HTMLParser
 import hashlib
 import json
@@ -11,6 +12,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 import time
 from urllib.parse import quote, urlsplit
 from urllib.request import Request, urlopen
@@ -159,6 +161,76 @@ def safe_inline(items, table_cell=False):
     return ''.join(output).replace('****', '')
 
 
+
+def approved_image_block(block):
+    """Render only a pre-reviewed, repository-hosted SVG with explicit editorial context.
+
+    The Notion image must be an external image linked to the same site's /visuals/
+    path. Notion's expiring uploaded file URLs, remote stock images and raw HTML
+    are never embedded in an automatic publication.
+    """
+    if block.get('has_children'):
+        raise ValueError('VISUAL_REVIEW_REQUIRED: nested image blocks are unsupported')
+    item = block['image']
+    if item.get('type') != 'external':
+        raise ValueError('VISUAL_REVIEW_REQUIRED: use an external image linked to an approved /visuals/ SVG; Notion file links expire')
+    url = (item.get('external') or {}).get('url', '')
+    parsed, site = urlsplit(url), urlsplit(SITE)
+    if (parsed.scheme, parsed.netloc) != (site.scheme, site.netloc) or parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise ValueError('VISUAL_REVIEW_REQUIRED: image URL must be an exact asset URL on this site')
+    if not re.fullmatch(r'/visuals/[a-z0-9]+(?:-[a-z0-9]+)*\.svg', parsed.path):
+        raise ValueError('VISUAL_REVIEW_REQUIRED: only reviewed /visuals/name.svg images are supported')
+    asset = ROOT / 'public' / parsed.path.lstrip('/')
+    if not asset.is_file() or asset.stat().st_size > 60000:
+        raise ValueError('VISUAL_REVIEW_REQUIRED: SVG missing from GitHub public/visuals or exceeds 60 KB')
+    data = asset.read_bytes()
+    if b'<!DOCTYPE' in data.upper() or b'<!ENTITY' in data.upper():
+        raise ValueError('VISUAL_REVIEW_REQUIRED: SVG entities or doctypes are not permitted')
+    if re.search(rb'url\s*\(|javascript\s*:', data, re.I):
+        raise ValueError('VISUAL_REVIEW_REQUIRED: SVG cannot contain embedded or remote resource links')
+    try:
+        image = ET.fromstring(data)
+    except ET.ParseError as exc:
+        raise ValueError('VISUAL_REVIEW_REQUIRED: malformed SVG') from exc
+    if image.tag != '{http://www.w3.org/2000/svg}svg':
+        raise ValueError('VISUAL_REVIEW_REQUIRED: SVG root must have an SVG namespace')
+    bounds = re.fullmatch(r'0 0 (\d+) (\d+)', image.get('viewBox', '').strip())
+    if not bounds:
+        raise ValueError('VISUAL_REVIEW_REQUIRED: SVG must declare viewBox="0 0 width height"')
+    width, height = map(int, bounds.groups())
+    if not (250 <= width <= 3000 and 150 <= height <= 3000):
+        raise ValueError('VISUAL_REVIEW_REQUIRED: SVG dimensions outside the supported range')
+    denied_tags = {'script', 'foreignObject', 'image', 'use', 'a', 'style', 'animate', 'animateMotion',
+                   'animateTransform', 'set', 'feImage', 'iframe'}
+    for node in image.iter():
+        if node.tag.split('}')[-1] in denied_tags:
+            raise ValueError('VISUAL_REVIEW_REQUIRED: unsafe or external SVG element')
+        for name in node.attrib:
+            attribute = name.split('}')[-1].lower()
+            if attribute.startswith('on') or attribute == 'href' or attribute == 'style':
+                raise ValueError('VISUAL_REVIEW_REQUIRED: SVG event handlers, hrefs and styles are not permitted')
+    lines = plain(item.get('caption', [])).replace('\r\n', '\n').strip().split('\n')
+    if len(lines) != 3:
+        raise ValueError('VISUAL_REVIEW_REQUIRED: image caption needs Alt:, Caption:, Credit: on separate lines')
+    fields = {}
+    for prefix, line in zip(('Alt: ', 'Caption: ', 'Credit: '), lines):
+        if not line.startswith(prefix):
+            raise ValueError('VISUAL_REVIEW_REQUIRED: caption must contain Alt:, Caption:, Credit: in that order')
+        fields[prefix] = line[len(prefix):].strip()
+    alt, caption, credit = (fields[key] for key in ('Alt: ', 'Caption: ', 'Credit: '))
+    if not (30 <= len(alt) <= 240 and 25 <= len(caption) <= 360 and 10 <= len(credit) <= 180):
+        raise ValueError('VISUAL_REVIEW_REQUIRED: meaningful alt text, caption and credit are required')
+    if any('\x00' in value for value in (alt, caption, credit)):
+        raise ValueError('VISUAL_REVIEW_REQUIRED: null byte in visual metadata')
+    digest = hashlib.sha256(data).hexdigest()
+    return ('<figure class="article-visual" data-asset-sha256="' + digest + '">\n'
+            '<img src="' + parsed.path + '" alt="' + html_escape(alt, quote=True) + '"'
+            ' width="' + str(width) + '" height="' + str(height) + '"'
+            ' loading="lazy" decoding="async">\n'
+            '<figcaption>' + html_escape(caption) + ' — ' + html_escape(credit) + '</figcaption>\n'
+            '</figure>')
+
+
 def markdown(block_id):
     output, previous_list = [], None
     for block in children(block_id):
@@ -183,7 +255,9 @@ def markdown(block_id):
             continue
         if block.get('has_children'):
             raise ValueError('Unsupported nested block: ' + kind)
-        if kind == 'code':
+        if kind == 'image':
+            output.extend([approved_image_block(block), ''])
+        elif kind == 'code':
             code = plain(data['rich_text'])
             fence = '`' * max(3, max((len(m.group()) + 1 for m in re.finditer(r'`+', code)), default=3))
             language = data.get('language', 'text')
@@ -378,7 +452,7 @@ def stage():
 def body_excerpt(markdown_body):
     # Use ordinary paragraph text, so rendered HTML can prove real body delivery.
     for paragraph in markdown_body.split('\n\n'):
-        if not paragraph.startswith(('#', '-', '|', '`', '>', '1.')) and len(paragraph) >= 80:
+        if not paragraph.startswith(('#', '-', '|', '`', '>', '1.', '<')) and len(paragraph) >= 80:
             text = re.sub(r'\[([^\]]+)\]\([^\s]*\)', r'\1', paragraph)
             text = re.sub(r'\\([\\`*_\[\]#!|])', r'\1', text)
             text = re.sub(r'[*`~]', '', text)
