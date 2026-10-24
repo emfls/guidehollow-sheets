@@ -58,6 +58,9 @@ function preview(id: string, data: CSVRow[], headings: string[], fullCaption?: s
 const updateReviewGate = () => {
   const pageCount = Math.ceil(conflictCount / CONFLICT_PAGE_SIZE);
   const ready = conflictReviewReady(conflictCount, CONFLICT_PAGE_SIZE, visitedConflictPages, reportRequested);
+  // Hide the final confirmation completely until full review access is established.
+  // This is an additional visible safeguard beyond the disabled state and download guard.
+  conflictAckRow.hidden = !ready;
   conflictAck.disabled = !ready;
   if (!ready) conflictAck.checked = false;
   conflictReviewProgress.textContent = ready
